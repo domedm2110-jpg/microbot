@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MicroBot — Laboratorio Virtual</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#1D9E75;--teal-d:#0F6E56;--teal-l:#E1F5EE;--teal-m:#9FE1CB;
+  --ok-bg:#E1F5EE;--ok-b:#9FE1CB;--ok-t:#085041;
+  --bad-bg:#FAECE7;--bad-b:#F5C4B3;--bad-t:#4A1B0C;
+  --ask-bg:#E6F1FB;--ask-b:#B5D4F4;--ask-t:#042C53;
+  --bg:#fff;--bg2:#f5f5f3;--border:rgba(0,0,0,0.11);
+  --text:#1a1a1a;--text2:#6b6b67;--r:12px;--rs:8px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1a1a1a;--bg2:#242424;--border:rgba(255,255,255,0.1);
+  --text:#f0f0ee;--text2:#a0a09c;
+  --teal-l:#04342C;--ok-bg:#04342C;--ok-b:#0F6E56;--ok-t:#9FE1CB;
+  --bad-bg:#4A1B0C;--bad-b:#993C1D;--bad-t:#F5C4B3;
+  --ask-bg:#042C53;--ask-b:#185FA5;--ask-t:#B5D4F4;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}
+
+/* ── LOGIN ── */
+#login-screen{width:100%;max-width:420px}
+.login-card{background:var(--bg);border:.5px solid var(--border);border-radius:16px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,0.07)}
+.login-logo{width:52px;height:52px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.login-logo svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
+.login-title{font-size:20px;font-weight:600;color:var(--text);text-align:center;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text2);text-align:center;margin-bottom:28px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.field input,.field select{width:100%;padding:9px 12px;border:.5px solid var(--border);border-radius:var(--rs);font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);transition:border-color .15s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--teal)}
+.field input::placeholder{color:var(--text2)}
+.btn-primary{width:100%;padding:11px;background:var(--teal);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;margin-top:4px}
+.btn-primary:hover{background:var(--teal-d)}
+.login-note{font-size:11px;color:var(--text2);text-align:center;margin-top:16px}
+.login-note a{color:var(--teal);text-decoration:none}
+
+/* ── CHAT ── */
+#chat-screen{display:none;width:100%;max-width:720px}
+#app{background:var(--bg);border-radius:16px;border:.5px solid var(--border);display:flex;flex-direction:column;height:min(680px,92vh);overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+#hdr{padding:10px 14px;background:var(--bg2);border-bottom:.5px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo{width:34px;height:34px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
+.htitle{font-size:14px;font-weight:600;color:var(--text)}
+.hsub{font-size:11px;color:var(--text2);margin-top:1px}
+#user-chip{margin-left:auto;font-size:11px;padding:3px 10px;border-radius:20px;background:var(--teal-l);color:var(--ok-t);border:.5px solid var(--teal-m);flex-shrink:0;white-space:nowrap}
+#logout-btn{font-size:11px;color:var(--text2);cursor:pointer;background:none;border:none;padding:3px 6px;flex-shrink:0}
+#logout-btn:hover{color:var(--text)}
+#tabs{display:flex;gap:4px;padding:7px 12px;background:var(--bg2);border-bottom:.5px solid var(--border);overflow-x:auto;flex-shrink:0}
+#tabs::-webkit-scrollbar{display:none}
+.tab{padding:4px 12px;font-size:11.5px;border-radius:20px;border:.5px solid var(--border);cursor:pointer;background:transparent;color:var(--text2);white-space:nowrap;flex-shrink:0;transition:all .15s}
+.tab:hover{border-color:var(--teal);color:var(--teal)}
+.tab.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+#chips{display:flex;gap:5px;padding:6px 12px;background:var(--bg2);border-bottom:.5px solid var(--border);overflow-x:auto;flex-shrink:0}
+#chips::-webkit-scrollbar{display:none}
+.chip{font-size:11px;padding:4px 12px;border-radius:20px;border:.5px solid var(--border);cursor:pointer;color:var(--text2);background:var(--bg);white-space:nowrap;flex-shrink:0;transition:all .15s}
+.chip:hover{border-color:var(--teal);color:var(--teal-d)}
+#msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:11px}
+.msg{max-width:88%;display:flex;flex-direction:column;gap:5px}
+.msg.u{align-self:flex-end;align-items:flex-end}
+.msg.b{align-self:flex-start;align-items:flex-start}
+.bub{padding:9px 13px;border-radius:var(--r);font-size:13px;line-height:1.65;color:var(--text);background:var(--bg2);border:.5px solid var(--border);white-space:pre-wrap;word-break:break-word}
+.msg.u .bub{background:var(--teal);color:#fff;border-color:var(--teal)}
+.bub.ok{background:var(--ok-bg);border-color:var(--ok-b);color:var(--ok-t)}
+.bub.wrong{background:var(--bad-bg);border-color:var(--bad-b);color:var(--bad-t)}
+.bub.ask{background:var(--ask-bg);border-color:var(--ask-b);color:var(--ask-t)}
+.imgprev{max-width:190px;border-radius:var(--rs);border:.5px solid var(--border)}
+.res-cards{display:flex;flex-direction:column;gap:5px;margin-top:5px;width:100%;max-width:360px}
+.rc{border:.5px solid var(--border);border-radius:var(--rs);padding:7px 10px;background:var(--bg);display:flex;align-items:center;gap:9px;cursor:pointer;transition:background .15s}
+.rc:hover{background:var(--bg2)}
+.ri{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.yt{background:#fdecea}.pa{background:#EAF3DE}
+.rt{font-size:12px;font-weight:500;color:var(--text)}
+.rs{font-size:10.5px;color:var(--text2);margin-top:1px}
+.loader{display:flex;gap:5px;padding:10px 13px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);align-self:flex-start}
+.loader span{width:6px;height:6px;border-radius:50%;background:var(--text2);animation:bl 1.2s infinite}
+.loader span:nth-child(2){animation-delay:.2s}.loader span:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,80%,100%{opacity:.2}40%{opacity:1}}
+#iarea{padding:9px 12px;border-top:.5px solid var(--border);background:var(--bg2);flex-shrink:0}
+#prevbar{display:none;align-items:center;gap:8px;margin-bottom:7px;padding:6px 10px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--rs)}
+#ithumb{width:38px;height:38px;object-fit:cover;border-radius:6px}
+#iname{font-size:11px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#irem{font-size:11px;color:var(--text2);cursor:pointer;border:none;background:none}
+#irow{display:flex;gap:7px;align-items:flex-end}
+#tinput{flex:1;resize:none;border:.5px solid var(--border);border-radius:var(--rs);padding:8px 11px;font-size:13.5px;font-family:inherit;min-height:40px;max-height:95px;background:var(--bg);color:var(--text);transition:border-color .15s}
+#tinput:focus{outline:none;border-color:var(--teal)}
+#tinput::placeholder{color:var(--text2)}
+.ibtn{width:36px;height:36px;border-radius:var(--rs);border:.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;flex-shrink:0;transition:background .15s}
+.ibtn:hover{background:var(--bg)}
+#sbtn{background:var(--teal);border-color:var(--teal)}
+#sbtn:hover{background:var(--teal-d)}
+#sbtn svg{stroke:#fff}
+#finput{display:none}
+#msgs::-webkit-scrollbar{width:4px}
+#msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+@media(max-width:480px){body{padding:0}#app{height:100vh;border-radius:0;border:none}}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ───────────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    </div>
+    <div class="login-title">MicroBot</div>
+    <div class="login-sub">Laboratorio Virtual de Microbiología<br>Ingresa tus datos para comenzar</div>
+    <div class="field">
+      <label>Nombre completo</label>
+      <input id="l-nombre" type="text" placeholder="Ej: Ana García Torres" autocomplete="name"/>
+    </div>
+    <div class="field">
+      <label>Código de alumno</label>
+      <input id="l-codigo" type="text" placeholder="Ej: 20230145" autocomplete="off"/>
+    </div>
+    <div class="field">
+      <label>Curso / Sección</label>
+      <select id="l-curso">
+        <option value="">— Seleccionar —</option>
+        <option>Microbiología de Salud — Sección A</option>
+        <option>Microbiología de Salud — Sección B</option>
+        <option>Microbiología Ambiental — Sección A</option>
+        <option>Microbiología Ambiental — Sección B</option>
+        <option>Histopatología — Sección A</option>
+        <option>Histopatología — Sección B</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Ingresar al laboratorio →</button>
+    <div class="login-note">¿Eres docente? <a href="/dashboard">Acceder al panel de analítica</a></div>
+  </div>
+</div>
+
+<!-- ── CHAT ────────────────────────────────────────────────────────────────── -->
+<div id="chat-screen">
+<div id="app">
+  <div id="hdr">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    </div>
+    <div>
+      <div class="htitle">MicroBot — Laboratorio Virtual</div>
+      <div class="hsub">Microbiología · Histopatología · Bacteriología · Ambiental</div>
+    </div>
+    <span id="user-chip">Alumno</span>
+    <button id="logout-btn" onclick="doLogout()">Salir</button>
+  </div>
+  <div id="tabs">
+    <button class="tab on" onclick="setTab(this,'general','General')">Consulta general</button>
+    <button class="tab" onclick="setTab(this,'lamina','Lámina')">Identificar lámina</button>
+    <button class="tab" onclick="setTab(this,'histo','Histopatología')">Histopatología</button>
+    <button class="tab" onclick="setTab(this,'bacteria','Bacterias')">Bacterias</button>
+    <button class="tab" onclick="setTab(this,'ambiental','Ambiental')">Ambiental</button>
+  </div>
+  <div id="chips"></div>
+  <div id="msgs"></div>
+  <div id="iarea">
+    <div id="prevbar">
+      <img id="ithumb" src="" alt=""/>
+      <span id="iname"></span>
+      <button id="irem" onclick="removeImg()">✕</button>
+    </div>
+    <div id="irow">
+      <label for="finput" title="Adjuntar imagen">
+        <div class="ibtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+      </label>
+      <input type="file" id="finput" accept="image/*" onchange="handleImg(event)"/>
+      <textarea id="tinput" placeholder="Escribe tu consulta o hipótesis..." onkeydown="onKey(event)" oninput="rsz(this)"></textarea>
+      <button id="sbtn" class="ibtn" onclick="send()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const CHIPS={general:['Tinción de Gram','Diferencia cocos y bacilos','Coliformes en agua','Hongos en lámina'],lamina:['Vi cocos en racimo Gram +','Bacilos con esporas terminales','Filamentos ramificados','Células ovoides que brotan'],histo:['Células en anillo de sello','Inflamación granulomatosa','Necrosis caseosa','Células en panal de abeja'],bacteria:['Staphylococcus vs Streptococcus','BAAR positivo en ZN','Espirales en campo oscuro','Bacilos anaerobios'],ambiental:['Coliformes totales y fecales','Biopelículas en agua','NMP en muestra de río','Hongos en suelo agrícola']};
+const PLACEHOLDERS={general:'Escribe tu consulta...',lamina:'Sube una imagen o describe la lámina...',histo:'Describe lo que observas en el tejido...',bacteria:'Describe la bacteria o tinción...',ambiental:'Consulta sobre agua, suelo, coliformes...'};
+
+let alumno=null, sesionId=null, mode='general', history=[], imgData=null, imgType=null, busy=false, totalMsgs=0;
+
+// ── LOGIN ──────────────────────────────────────────────────────────────────
+async function doLogin(){
+  const nombre=document.getElementById('l-nombre').value.trim();
+  const codigo=document.getElementById('l-codigo').value.trim();
+  const curso=document.getElementById('l-curso').value;
+  if(!nombre||!codigo){alert('Por favor ingresa tu nombre y código.');return;}
+  try{
+    const r=await fetch('/api/registro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,codigo,curso})});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error);
+    alumno=d.alumno; sesionId=d.sesionId;
+    localStorage.setItem('mb_alumno',JSON.stringify({alumno,sesionId}));
+    startChat();
+  }catch(e){alert('Error al registrar: '+e.message);}
+}
+
+function startChat(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('chat-screen').style.display='block';
+  document.getElementById('user-chip').textContent=alumno.nombre.split(' ')[0]+' · '+alumno.codigo;
+  setTab(document.querySelector('.tab.on'),'general','General');
+  addBubble('b',`¡Hola, ${alumno.nombre.split(' ')[0]}! Soy MicroBot 🔬\n\nPuedo ayudarte a identificar:\n• Láminas microbiológicas (Gram, Ziehl-Neelsen, KOH...)\n• Bacterias por morfología y tinción\n• Láminas histopatológicas (tejidos, neoplasias...)\n• Microorganismos ambientales\n\nSube una imagen o describe lo que ves → te preguntaré primero qué crees que es. ¡Así aprendes más!`,'');
+  window.addEventListener('beforeunload',()=>{
+    if(sesionId) navigator.sendBeacon('/api/cerrar-sesion',JSON.stringify({sesionId,totalMsgs}));
+  });
+}
+
+function doLogout(){
+  if(sesionId) fetch('/api/cerrar-sesion',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sesionId,totalMsgs})});
+  localStorage.removeItem('mb_alumno');
+  alumno=null; sesionId=null; history=[]; totalMsgs=0;
+  document.getElementById('chat-screen').style.display='none';
+  document.getElementById('login-screen').style.display='block';
+}
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+function setTab(btn,m,label){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on'); mode=m;
+  document.getElementById('tinput').placeholder=PLACEHOLDERS[m];
+  document.getElementById('chips').innerHTML=(CHIPS[m]||CHIPS.general).map(x=>`<span class="chip" onclick="useChip(this.textContent)">${x}</span>`).join('');
+}
+function useChip(t){document.getElementById('tinput').value=t;send();}
+
+// ── INPUT ──────────────────────────────────────────────────────────────────
+function rsz(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,95)+'px';}
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function handleImg(e){
+  const f=e.target.files[0];if(!f)return;
+  imgType=f.type;
+  const r=new FileReader();
+  r.onload=ev=>{imgData=ev.target.result.split(',')[1];document.getElementById('prevbar').style.display='flex';document.getElementById('ithumb').src=ev.target.result;document.getElementById('iname').textContent=f.name;};
+  r.readAsDataURL(f);
+}
+function removeImg(){imgData=null;imgType=null;document.getElementById('prevbar').style.display='none';document.getElementById('finput').value='';}
+
+// ── SEND ───────────────────────────────────────────────────────────────────
+async function send(){
+  const ta=document.getElementById('tinput');
+  const txt=ta.value.trim();
+  if((!txt&&!imgData)||busy)return;
+  busy=true; ta.value=''; ta.style.height='auto';
+  const modeTag=`[MODO: ${mode.toUpperCase()}] `;
+  const fullTxt=modeTag+(txt||'(imagen adjunta para identificar)');
+  addUserMsg(txt,imgData?document.getElementById('ithumb').src:null);
+  const content=[];
+  if(imgData)content.push({type:'image',source:{type:'base64',media_type:imgType,data:imgData}});
+  content.push({type:'text',text:fullTxt});
+  history.push({role:'user',content:content.length===1?fullTxt:content});
+  totalMsgs++;
+  removeImg();
+  const lid=addLoader();
+  try{
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,alumno,sesionId,modo:mode,mensajeUsuario:txt})});
+    const d=await res.json();
+    removeLoader(lid);
+    const reply=d.content||'Error al obtener respuesta.';
+    history.push({role:'assistant',content:reply});
+    renderBot(reply);
+  }catch(e){removeLoader(lid);addBubble('b','⚠️ Error de conexión. Intenta nuevamente.','');}
+  busy=false;
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function renderBot(raw){
+  let tone='',text=raw;
+  if(raw.startsWith('[ASK]')){tone='ask';text=raw.replace('[ASK]','').trim();}
+  else if(raw.startsWith('[OK]')){tone='ok';text=raw.replace('[OK]','').trim();}
+  else if(raw.startsWith('[PARTIAL]')){tone='ok';text=raw.replace('[PARTIAL]','').trim();}
+  else if(raw.startsWith('[WRONG]')){tone='wrong';text=raw.replace('[WRONG]','').trim();}
+  const{main,resources}=parseRes(text);
+  const w=document.createElement('div');w.className='msg b';
+  const b=document.createElement('div');b.className='bub'+(tone?' '+tone:'');b.textContent=main;w.appendChild(b);
+  if(resources.length){
+    const c=document.createElement('div');c.className='res-cards';
+    resources.forEach(r=>{
+      const rc=document.createElement('div');rc.className='rc';rc.onclick=()=>window.open(r.url,'_blank');
+      rc.innerHTML=`<div class="ri ${r.type==='video'?'yt':'pa'}">${r.type==='video'?'▶':'📄'}</div><div><div class="rt">${esc(r.title)}</div><div class="rs">${r.type==='video'?'YouTube — ver video':'Artículo científico'}</div></div>`;
+      c.appendChild(rc);
+    });
+    w.appendChild(c);
+  }
+  document.getElementById('msgs').appendChild(w);scrollB();
+}
+
+function parseRes(text){
+  const res=[],vr=/\[VIDEO:\s*([^|]+)\|\s*URL:\s*([^\]]+)\]/g,pr=/\[PAPER:\s*([^|]+)\|\s*FUENTE:[^|]+\|\s*URL:\s*([^\]]+)\]/g;
+  let m;
+  while((m=vr.exec(text))!==null)res.push({type:'video',title:m[1].trim(),url:m[2].trim()});
+  while((m=pr.exec(text))!==null)res.push({type:'paper',title:m[1].trim(),url:m[2].trim()});
+  return{main:text.replace(vr,'').replace(pr,'').trim(),resources:res};
+}
+
+function addUserMsg(txt,imgSrc){
+  const w=document.createElement('div');w.className='msg u';
+  if(imgSrc){const img=document.createElement('img');img.className='imgprev';img.src=imgSrc;w.appendChild(img);}
+  if(txt){const b=document.createElement('div');b.className='bub';b.textContent=txt;w.appendChild(b);}
+  document.getElementById('msgs').appendChild(w);scrollB();
+}
+function addBubble(who,txt,tone){
+  const w=document.createElement('div');w.className=`msg ${who}`;
+  const b=document.createElement('div');b.className='bub'+(tone?' '+tone:'');b.textContent=txt;
+  w.appendChild(b);document.getElementById('msgs').appendChild(w);scrollB();
+}
+function addLoader(){const d=document.createElement('div');d.className='loader';d.innerHTML='<span></span><span></span><span></span>';document.getElementById('msgs').appendChild(d);scrollB();return d;}
+function removeLoader(el){if(el&&el.parentNode)el.remove();}
+function scrollB(){const m=document.getElementById('msgs');m.scrollTop=m.scrollHeight;}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Auto-login si hay sesión guardada
+const saved=localStorage.getItem('mb_alumno');
+if(saved){try{const s=JSON.parse(saved);alumno=s.alumno;sesionId=s.sesionId;startChat();}catch(e){localStorage.removeItem('mb_alumno');}}
+</script>
+</body>
+</html>

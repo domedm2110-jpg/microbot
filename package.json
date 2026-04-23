@@ -1,0 +1,21 @@
+{
+  "name": "microbot-laboratorio",
+  "version": "2.1.0",
+  "description": "Chatbot educativo de microbiología con analítica de aprendizaje",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

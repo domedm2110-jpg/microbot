@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MicroBot — Panel Docente</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#1D9E75;--teal-d:#0F6E56;--teal-l:#E1F5EE;--teal-m:#9FE1CB;
+  --ok:#1D9E75;--bad:#D85A30;--warn:#BA7517;--info:#378ADD;
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#eeecea;
+  --border:rgba(0,0,0,0.1);--text:#1a1a1a;--text2:#6b6b67;
+  --r:10px;--rs:7px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1a1a1a;--bg2:#242424;--bg3:#2e2e2e;
+  --border:rgba(255,255,255,0.1);--text:#f0f0ee;--text2:#a0a09c;
+  --teal-l:#04342C;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);min-height:100vh;color:var(--text)}
+
+/* LOGIN */
+#login-panel{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.lcard{background:var(--bg);border:.5px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,0.07)}
+.lcard h2{font-size:20px;font-weight:600;margin-bottom:6px}
+.lcard p{font-size:13px;color:var(--text2);margin-bottom:24px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.field input{width:100%;padding:9px 12px;border:.5px solid var(--border);border-radius:var(--rs);font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);margin-bottom:14px}
+.field input:focus{outline:none;border-color:var(--teal)}
+.btn-green{width:100%;padding:10px;background:var(--teal);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:500;cursor:pointer}
+.btn-green:hover{background:var(--teal-d)}
+#err-msg{font-size:12px;color:var(--bad);margin-top:10px;text-align:center;display:none}
+
+/* DASHBOARD */
+#dash{display:none}
+nav{background:var(--bg);border-bottom:.5px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:12px}
+nav .logo{width:30px;height:30px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+nav .logo svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
+nav .title{font-size:15px;font-weight:600}
+nav .sub{font-size:12px;color:var(--text2)}
+.nav-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:20px;border:.5px solid var(--border);cursor:pointer;background:var(--bg2);color:var(--text2)}
+.btn-sm:hover{border-color:var(--teal);color:var(--teal)}
+.btn-export{background:var(--teal-l);color:var(--teal-d);border-color:var(--teal-m)}
+#last-update{font-size:11px;color:var(--text2)}
+
+main{padding:20px 24px;max-width:1200px;margin:0 auto}
+
+/* KPI CARDS */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.kpi .k-label{font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.kpi .k-val{font-size:28px;font-weight:600;color:var(--text);line-height:1}
+.kpi .k-sub{font-size:11px;color:var(--text2);margin-top:5px}
+.kpi.accent{background:var(--teal-l);border-color:var(--teal-m)}
+.kpi.accent .k-val{color:var(--teal-d)}
+
+/* CHARTS ROW */
+.charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+@media(max-width:900px){.charts-row{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.charts-row{grid-template-columns:1fr}}
+.chart-box{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:16px}
+.chart-box h3{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:14px}
+.chart-wrap{position:relative;height:180px}
+
+/* TABLA ALUMNOS */
+.section-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title span{font-size:11px;color:var(--text2);font-weight:400}
+.tbl-wrap{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--bg2)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:500;color:var(--text2);white-space:nowrap;border-bottom:.5px solid var(--border)}
+td{padding:10px 14px;border-bottom:.5px solid var(--border);color:var(--text);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.pill.ok{background:var(--teal-l);color:var(--teal-d)}
+.pill.mid{background:#FAEEDA;color:#633806}
+.pill.low{background:#FCEBEB;color:#501313}
+.bar-wrap{width:80px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+.bar-fill{height:100%;border-radius:3px;background:var(--teal);transition:width .3s}
+
+/* ACTIVIDAD RECIENTE */
+.act-list{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);overflow:hidden}
+.act-item{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:.5px solid var(--border);font-size:12.5px}
+.act-item:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:var(--ok)}.dot-wrong{background:var(--bad)}.dot-partial{background:var(--warn)}.dot-ask{background:var(--info)}.dot-general{background:var(--text2)}
+.act-name{font-weight:500;min-width:110px}
+.act-modo{color:var(--text2);min-width:90px}
+.act-ts{color:var(--text2);margin-left:auto;font-size:11px}
+
+/* VACÍO */
+.empty{text-align:center;padding:40px;color:var(--text2);font-size:13px}
+
+/* SPINNER */
+#loading{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);align-items:center;justify-content:center;z-index:999}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading" style="display:flex"><div class="spinner"></div></div>
+
+<!-- LOGIN -->
+<div id="login-panel">
+  <div class="lcard">
+    <h2>🔬 Panel Docente</h2>
+    <p>Acceso restringido — ingresa la contraseña del profesor</p>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAuth()"/>
+    </div>
+    <button class="btn-green" onclick="doAuth()">Acceder al dashboard →</button>
+    <div id="err-msg">Contraseña incorrecta</div>
+    <p style="font-size:11px;color:var(--text2);margin-top:16px;text-align:center"><a href="/" style="color:var(--teal);text-decoration:none">← Volver al chat de alumnos</a></p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dash">
+  <nav>
+    <div class="logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg></div>
+    <div><div class="title">MicroBot — Panel Docente</div><div class="sub">Analítica de aprendizaje</div></div>
+    <div class="nav-right">
+      <span id="last-update"></span>
+      <button class="btn-sm btn-export" onclick="exportCSV()">⬇ Exportar CSV</button>
+      <button class="btn-sm" onclick="loadStats()">↺ Actualizar</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi accent"><div class="k-label">Alumnos registrados</div><div class="k-val" id="k-alumnos">—</div><div class="k-sub">Total acumulado</div></div>
+      <div class="kpi"><div class="k-label">Interacciones totales</div><div class="k-val" id="k-inter">—</div><div class="k-sub">Preguntas y respuestas</div></div>
+      <div class="kpi"><div class="k-label">Sesiones iniciadas</div><div class="k-val" id="k-sesiones">—</div><div class="k-sub">Total acumulado</div></div>
+      <div class="kpi"><div class="k-label">Actividad hoy</div><div class="k-val" id="k-hoy">—</div><div class="k-sub">Interacciones del día</div></div>
+      <div class="kpi"><div class="k-label">Tasa de acierto</div><div class="k-val" id="k-acierto">—</div><div class="k-sub">Correctas / evaluadas</div></div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="charts-row">
+      <div class="chart-box">
+        <h3>Resultados de evaluación</h3>
+        <div class="chart-wrap"><canvas id="chart-resultados"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Uso por área temática</h3>
+        <div class="chart-wrap"><canvas id="chart-modos"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Actividad últimos 30 días</h3>
+        <div class="chart-wrap"><canvas id="chart-actividad"></canvas></div>
+      </div>
+    </div>
+
+    <!-- TABLA ALUMNOS -->
+    <div class="section-title">Detalle por alumno <span id="alumno-count"></span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Alumno</th><th>Código</th><th>Curso</th>
+          <th>Interacciones</th><th>Tasa acierto</th><th>Correctas</th>
+          <th>Incorrectas</th><th>Parciales</th><th>Última actividad</th>
+        </tr></thead>
+        <tbody id="tbody-alumnos"><tr><td colspan="9" class="empty">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- ACTIVIDAD RECIENTE -->
+    <div class="section-title">Actividad reciente</div>
+    <div class="act-list" id="act-list"></div>
+  </main>
+</div>
+
+<script>
+let dashKey = '';
+let charts = {};
+
+async function doAuth(){
+  const p = document.getElementById('pass').value;
+  document.getElementById('loading').style.display = 'flex';
+  try{
+    const r = await fetch('/api/dashboard/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p})});
+    if(!r.ok) throw new Error();
+    dashKey = p;
+    document.getElementById('login-panel').style.display = 'none';
+    document.getElementById('dash').style.display = 'block';
+    await loadStats();
+  }catch{
+    document.getElementById('err-msg').style.display = 'block';
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+async function loadStats(){
+  document.getElementById('loading').style.display = 'flex';
+  try{
+    const r = await fetch('/api/dashboard/stats',{headers:{'x-dash-key':dashKey}});
+    const d = await r.json();
+    renderStats(d);
+    document.getElementById('last-update').textContent = 'Actualizado: '+new Date().toLocaleTimeString('es-PE');
+  }catch(e){alert('Error al cargar estadísticas');}
+  document.getElementById('loading').style.display = 'none';
+}
+
+function renderStats(d){
+  // KPIs
+  document.getElementById('k-alumnos').textContent   = d.totales.alumnos;
+  document.getElementById('k-inter').textContent     = d.totales.interacciones;
+  document.getElementById('k-sesiones').textContent  = d.totales.sesiones;
+  document.getElementById('k-hoy').textContent       = d.totales.hoy;
+
+  const res = d.resultados || [];
+  const ok  = (res.find(r=>r.resultado==='ok')?.n)||0;
+  const wr  = (res.find(r=>r.resultado==='wrong')?.n)||0;
+  const pa  = (res.find(r=>r.resultado==='partial')?.n)||0;
+  const total = ok+wr+pa;
+  document.getElementById('k-acierto').textContent = total>0 ? Math.round(ok/total*100)+'%' : '—';
+
+  // Chart: resultados
+  renderDoughnut('chart-resultados',
+    ['Correctas','Incorrectas','Parciales'],
+    [ok,wr,pa],
+    ['#1D9E75','#D85A30','#BA7517']
+  );
+
+  // Chart: modos
+  const modos = d.modos||[];
+  const modoLabels = {'general':'General','lamina':'Láminas','histo':'Histopatología','bacteria':'Bacterias','ambiental':'Ambiental'};
+  renderBar('chart-modos',
+    modos.map(m=>modoLabels[m.modo]||m.modo),
+    modos.map(m=>m.n),
+    '#378ADD'
+  );
+
+  // Chart: actividad por día
+  const act = d.actividadPorDia||[];
+  renderLine('chart-actividad',
+    act.map(a=>a.dia.slice(5)),
+    act.map(a=>a.n)
+  );
+
+  // Tabla alumnos
+  const tbody = document.getElementById('tbody-alumnos');
+  if(!d.rankingAlumnos||d.rankingAlumnos.length===0){
+    tbody.innerHTML='<tr><td colspan="9" class="empty">Aún no hay alumnos registrados</td></tr>';
+  } else {
+    document.getElementById('alumno-count').textContent = d.rankingAlumnos.length+' registrados';
+    tbody.innerHTML = d.rankingAlumnos.map(a=>{
+      const ev = a.correctas+a.incorrectas+a.parciales;
+      const pct = ev>0 ? Math.round(a.correctas/ev*100) : null;
+      const pillClass = pct===null?'':pct>=70?'ok':pct>=40?'mid':'low';
+      const pillTxt = pct===null?'—':pct+'%';
+      const fecha = a.ultima_actividad ? new Date(a.ultima_actividad).toLocaleDateString('es-PE') : '—';
+      return `<tr>
+        <td><strong>${esc(a.nombre)}</strong></td>
+        <td style="color:var(--text2)">${esc(a.codigo)}</td>
+        <td style="color:var(--text2);font-size:11px">${esc(a.curso||'—')}</td>
+        <td>${a.total_interacciones||0}</td>
+        <td><div class="bar-wrap"><div class="bar-fill" style="width:${pct||0}%"></div></div><span class="pill ${pillClass}">${pillTxt}</span></td>
+        <td style="color:var(--ok);font-weight:500">${a.correctas||0}</td>
+        <td style="color:var(--bad)">${a.incorrectas||0}</td>
+        <td style="color:var(--warn)">${a.parciales||0}</td>
+        <td style="color:var(--text2);font-size:11px">${fecha}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Actividad reciente
+  const actList = document.getElementById('act-list');
+  if(!d.ultimasInteracciones||d.ultimasInteracciones.length===0){
+    actList.innerHTML='<div class="empty">No hay actividad reciente</div>';
+  } else {
+    const resultLabels = {ok:'Correcto',wrong:'Incorrecto',partial:'Parcial',ask:'Pregunta',general:'Consulta'};
+    const modoL = {'general':'General','lamina':'Láminas','histo':'Histopatología','bacteria':'Bacterias','ambiental':'Ambiental'};
+    actList.innerHTML = d.ultimasInteracciones.map(i=>`
+      <div class="act-item">
+        <div class="act-dot dot-${i.resultado||'general'}"></div>
+        <div class="act-name">${esc(i.alumno_nombre||'—')}</div>
+        <div class="act-modo">${modoL[i.modo]||i.modo||'—'}</div>
+        <div style="font-size:11px;color:var(--text2)">${resultLabels[i.resultado]||i.resultado||'—'}</div>
+        <div class="act-ts">${new Date(i.timestamp).toLocaleString('es-PE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>`).join('');
+  }
+}
+
+// ── CHARTS ─────────────────────────────────────────────────────────────────
+function renderDoughnut(id, labels, data, colors){
+  if(charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:8}}}}
+  });
+}
+function renderBar(id, labels, data, color){
+  if(charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:color+'44',borderColor:color,borderWidth:1.5,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},x:{ticks:{font:{size:10}},grid:{display:false}}}}
+  });
+}
+function renderLine(id, labels, data){
+  if(charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{data,borderColor:'#1D9E75',backgroundColor:'#1D9E7522',borderWidth:2,pointRadius:3,tension:0.3,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}}
+  });
+}
+
+async function exportCSV(){
+  const r = await fetch('/api/dashboard/export',{headers:{'x-dash-key':dashKey}});
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'microbot-datos-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
