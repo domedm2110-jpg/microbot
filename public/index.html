@@ -292,27 +292,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <script>
-const CHIPS={general:['Tinción de Gram','Diferencia cocos y bacilos','Coliformes en agua','Hongos en lámina'],lamina:['Vi cocos en racimo Gram +','Bacilos con esporas terminales','Filamentos ramificados','Células ovoides que brotan'],histo:['Tinción H&E — tejido hepático','Tinción PAS — tejido renal','Ziehl-Neelsen — tejido pulmonar','Masson — tejido cardíaco'],bacteria:['Staphylococcus vs Streptococcus','BAAR positivo en ZN','Espirales en campo oscuro','Bacilos anaerobios'],ambiental:['Coliformes totales y fecales','Biopelículas en agua','NMP en muestra de río','Hongos en suelo agrícola']};
-const PLACEHOLDERS={general:'Escribe tu consulta...',lamina:'Sube una imagen o describe la lámina...',histo:'Indica el tejido y la tinción usada, o sube la foto de la lámina...',bacteria:'Describe la bacteria o tinción...',ambiental:'Consulta sobre agua, suelo, coliformes...'};
+const CHIPS={
+  general:['Tinción de Gram','Diferencia cocos y bacilos','Coliformes en agua','Hongos en lámina'],
+  lamina:['Vi cocos en racimo Gram +','Bacilos con esporas terminales','Filamentos ramificados','Células ovoides que brotan'],
+  histo:['Tinción H&E — tejido hepático','Tinción PAS — tejido renal','Ziehl-Neelsen — tejido pulmonar','Masson — tejido cardíaco'],
+  bacteria:['Staphylococcus vs Streptococcus','BAAR positivo en ZN','Espirales en campo oscuro','Bacilos anaerobios'],
+  ambiental:['Coliformes totales y fecales','Biopelículas en agua','NMP en muestra de río','Hongos en suelo agrícola']
+};
+const PLACEHOLDERS={
+  general:'Escribe tu consulta...',
+  lamina:'Sube una imagen o describe la lámina...',
+  histo:'Indica el tejido y la tinción usada, o sube la foto de la lámina...',
+  bacteria:'Describe la bacteria o tinción...',
+  ambiental:'Consulta sobre agua, suelo, coliformes...'
+};
 
-let alumno=null,sesionId=null,mode='general',history=[],imgData=null,imgType=null,busy=false,totalMsgs=0;
-let examMode=false,examData=null,examPregunta=0,examCorrect=0,examPartial=0,examWrong=0,examHistory=[];
-let surveyRatings={1:0,2:0,3:0,4:0};
+var alumno=null,sesionId=null,mode='general',history=[],imgData=null,imgType=null,busy=false,totalMsgs=0;
+var examMode=false,examData=null,examPregunta=0,examCorrect=0,examPartial=0,examWrong=0,examHistory=[];
+var surveyRatings={1:0,2:0,3:0,4:0};
 
-// ── LOGIN ──────────────────────────────────────────────────────────────────
-async function doLogin(){
-  const nombre=document.getElementById('l-nombre').value.trim();
-  const codigo=document.getElementById('l-codigo').value.trim();
-  const curso=document.getElementById('l-curso').value;
+function doLogin(){
+  var nombre=document.getElementById('l-nombre').value.trim();
+  var codigo=document.getElementById('l-codigo').value.trim();
+  var curso=document.getElementById('l-curso').value;
   if(!nombre||!codigo){alert('Por favor ingresa tu nombre y código.');return;}
-  try{
-    const r=await fetch('/api/registro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,codigo,curso})});
-    const d=await r.json();
-    if(!d.ok)throw new Error(d.error);
-    alumno=d.alumno;sesionId=d.sesionId;
-    localStorage.setItem('mb_alumno',JSON.stringify({alumno,sesionId}));
-    startChat();
-  }catch(e){alert('Error al registrar: '+e.message);}
+  fetch('/api/registro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,codigo,curso})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok)throw new Error(d.error);
+      alumno=d.alumno;sesionId=d.sesionId;
+      localStorage.setItem('mb_alumno',JSON.stringify({alumno,sesionId}));
+      startChat();
+    })
+    .catch(function(e){alert('Error al registrar: '+e.message);});
 }
 
 function startChat(){
@@ -320,8 +332,17 @@ function startChat(){
   document.getElementById('chat-screen').style.display='block';
   document.getElementById('user-chip').textContent=alumno.nombre.split(' ')[0]+' · '+alumno.codigo;
   setTab(document.querySelector('.tab.on'),'general','General');
-  addBubble('b','¡Hola, '+alumno.nombre.split(' ')[0]+'! Soy MicroBot / HistoLab 🔬\n\nPuedo ayudarte a identificar:\n• Láminas histopatológicas → usa el tab 🔬 HistoLab\n• Láminas microbiológicas (Gram, Ziehl-Neelsen, KOH...)\n• Bacterias por morfología y tinción\n• Microorganismos ambientales\n\n📷 Puedes subir fotos o tomar foto directamente con la cámara.\n\nEn HistoLab siempre te preguntaré la tinción y el tejido antes de identificar. ¡Así el diagnóstico es exacto!\n\n📝 ¿Tu profesor te dio un código de examen? Usa el botón naranja "Examen".','');
-  window.addEventListener('beforeunload',()=>{if(sesionId)navigator.sendBeacon('/api/cerrar-sesion',JSON.stringify({sesionId,totalMsgs}));});
+  var fn = alumno.nombre.split(' ')[0];
+  var msg = 'Hola ' + fn + '! Soy MicroBot / HistoLab.' + String.fromCharCode(10) + String.fromCharCode(10);
+  msg += 'Puedo ayudarte a identificar:' + String.fromCharCode(10);
+  msg += 'Laminas histopatologicas, microbiologicas, bacterias y microorganismos ambientales.' + String.fromCharCode(10) + String.fromCharCode(10);
+  msg += 'Sube una foto o describe lo que ves.' + String.fromCharCode(10);
+  msg += 'En HistoLab siempre te preguntare la tincion primero.' + String.fromCharCode(10) + String.fromCharCode(10);
+  msg += 'Si tu profesor te dio un codigo de examen, usa el boton naranja de Examen.';
+  addBubble('b',msg,'');
+  window.addEventListener('beforeunload',function(){
+    if(sesionId) navigator.sendBeacon('/api/cerrar-sesion',JSON.stringify({sesionId:sesionId,totalMsgs:totalMsgs}));
+  });
   initStars();
 }
 
@@ -330,7 +351,7 @@ function doLogout(){
   else{_doLogout();}
 }
 function _doLogout(){
-  if(sesionId)fetch('/api/cerrar-sesion',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sesionId,totalMsgs})});
+  if(sesionId) fetch('/api/cerrar-sesion',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sesionId:sesionId,totalMsgs:totalMsgs})});
   localStorage.removeItem('mb_alumno');
   alumno=null;sesionId=null;history=[];totalMsgs=0;examMode=false;
   document.getElementById('chat-screen').style.display='none';
@@ -338,55 +359,63 @@ function _doLogout(){
   document.getElementById('msgs').innerHTML='';
 }
 
-// ── TABS ───────────────────────────────────────────────────────────────────
 function setTab(btn,m,label){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
   btn.classList.add('on');mode=m;
   document.getElementById('tinput').placeholder=PLACEHOLDERS[m]||'Escribe tu consulta...';
-  document.getElementById('chips').innerHTML=(CHIPS[m]||CHIPS.general).map(x=>`<span class="chip" onclick="useChip(this.textContent)">${x}</span>`).join('');
+  document.getElementById('chips').innerHTML=(CHIPS[m]||CHIPS.general).map(function(x){return '<span class="chip" onclick="useChip(this.textContent)">'+x+'</span>';}).join('');
 }
 function useChip(t){document.getElementById('tinput').value=t;send();}
 
-// ── INPUT ──────────────────────────────────────────────────────────────────
 function rsz(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,95)+'px';}
 function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+
 function handleImg(e){
-  const f=e.target.files[0];if(!f)return;
+  var f=e.target.files[0];if(!f)return;
   imgType=f.type;
-  const r=new FileReader();
-  r.onload=ev=>{imgData=ev.target.result.split(',')[1];document.getElementById('prevbar').style.display='flex';document.getElementById('ithumb').src=ev.target.result;document.getElementById('iname').textContent=f.name;};
+  var r=new FileReader();
+  r.onload=function(ev){
+    imgData=ev.target.result.split(',')[1];
+    document.getElementById('prevbar').style.display='flex';
+    document.getElementById('ithumb').src=ev.target.result;
+    document.getElementById('iname').textContent=f.name;
+  };
   r.readAsDataURL(f);
 }
-function removeImg(){imgData=null;imgType=null;document.getElementById('prevbar').style.display='none';document.getElementById('finput').value='';document.getElementById('camerainput').value='';}
+function removeImg(){
+  imgData=null;imgType=null;
+  document.getElementById('prevbar').style.display='none';
+  document.getElementById('finput').value='';
+  document.getElementById('camerainput').value='';
+}
 
-// ── SEND NORMAL ────────────────────────────────────────────────────────────
-async function send(){
+function send(){
   if(examMode){sendExam();return;}
-  const ta=document.getElementById('tinput');
-  const txt=ta.value.trim();
+  var ta=document.getElementById('tinput');
+  var txt=ta.value.trim();
   if((!txt&&!imgData)||busy)return;
   busy=true;ta.value='';ta.style.height='auto';
-  const modeTag='[MODO: '+mode.toUpperCase()+'] ';
-  const fullTxt=modeTag+(txt||'(imagen adjunta)');
+  var modeTag='[MODO: '+mode.toUpperCase()+'] ';
+  var fullTxt=modeTag+(txt||'(imagen adjunta)');
   addUserMsg(txt,imgData?document.getElementById('ithumb').src:null);
-  const content=[];
-  if(imgData)content.push({type:'image',source:{type:'base64',media_type:imgType,data:imgData}});
+  var content=[];
+  if(imgData) content.push({type:'image',source:{type:'base64',media_type:imgType,data:imgData}});
   content.push({type:'text',text:fullTxt});
   history.push({role:'user',content:content.length===1?fullTxt:content});
   totalMsgs++;removeImg();
-  const lid=addLoader();
-  try{
-    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,alumno,sesionId,modo:mode,mensajeUsuario:txt})});
-    const d=await res.json();
-    removeLoader(lid);
-    const reply=d.content||'Error.';
-    history.push({role:'assistant',content:reply});
-    renderBot(reply);
-  }catch(e){removeLoader(lid);addBubble('b','⚠️ Error de conexión. Intenta nuevamente.','');}
+  var lid=addLoader();
+  fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,alumno:alumno,sesionId:sesionId,modo:mode,mensajeUsuario:txt})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      removeLoader(lid);
+      var reply=d.content||'Error.';
+      history.push({role:'assistant',content:reply});
+      renderBot(reply,false);
+    })
+    .catch(function(e){removeLoader(lid);addBubble('b','Error de conexion. Intenta nuevamente.','');});
   busy=false;
 }
 
-// ── MODO EXAMEN ────────────────────────────────────────────────────────────
 function openExamModal(){
   document.getElementById('exam-modal').classList.add('show');
   document.getElementById('exam-code-input').value='';
@@ -395,124 +424,139 @@ function openExamModal(){
 }
 function closeExamModal(){document.getElementById('exam-modal').classList.remove('show');}
 
-async function startExam(){
-  const code=document.getElementById('exam-code-input').value.trim().toUpperCase();
-  if(!code){document.getElementById('exam-modal-err').textContent='Ingresa el código.';document.getElementById('exam-modal-err').style.display='block';return;}
-  try{
-    const r=await fetch('/api/examen/verificar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo:code})});
-    const d=await r.json();
-    if(!d.ok)throw new Error(d.error||'Código inválido');
-    examData=d.examen;examMode=true;examPregunta=0;examCorrect=0;examPartial=0;examWrong=0;examHistory=[];
-    closeExamModal();
-    document.getElementById('exam-banner').style.display='flex';
-    document.getElementById('exam-name-label').textContent=examData.nombre;
-    updateExamProgress();
-    document.getElementById('msgs').innerHTML='';
-    document.getElementById('chips').style.display='none';
-    addBubble('b','📝 EXAMEN INICIADO: '+examData.nombre+'\n\n'+(examData.descripcion?examData.descripcion+'\n\n':'')+' Total de preguntas: '+examData.total_preguntas+'\n\nDescribe o sube la imagen de la lámina que te indicó el profesor para comenzar. En este modo no habrá pistas ni materiales de apoyo.','ask');
-  }catch(e){
-    document.getElementById('exam-modal-err').textContent=e.message;
+function startExam(){
+  var code=document.getElementById('exam-code-input').value.trim().toUpperCase();
+  if(!code){
+    document.getElementById('exam-modal-err').textContent='Ingresa el codigo.';
     document.getElementById('exam-modal-err').style.display='block';
+    return;
   }
+  fetch('/api/examen/verificar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo:code})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok) throw new Error(d.error||'Codigo invalido');
+      examData=d.examen;examMode=true;examPregunta=0;examCorrect=0;examPartial=0;examWrong=0;examHistory=[];
+      closeExamModal();
+      document.getElementById('exam-banner').style.display='flex';
+      document.getElementById('exam-name-label').textContent=examData.nombre;
+      updateExamProgress();
+      document.getElementById('msgs').innerHTML='';
+      document.getElementById('chips').style.display='none';
+      var nl = String.fromCharCode(10);
+      var msg = 'EXAMEN: ' + examData.nombre + nl;
+      if(examData.descripcion) msg += examData.descripcion + nl;
+      msg += 'Total de preguntas: ' + examData.total_preguntas + nl + nl;
+      msg += 'Describe o sube la imagen de la lamina. No habra pistas ni recursos de apoyo.';
+      addBubble('b',msg,'ask');
+    })
+    .catch(function(e){
+      document.getElementById('exam-modal-err').textContent=e.message;
+      document.getElementById('exam-modal-err').style.display='block';
+    });
 }
 
 function updateExamProgress(){
   document.getElementById('exam-progress').textContent='Pregunta '+(examPregunta+1)+' de '+examData.total_preguntas;
 }
 
-async function sendExam(){
-  const ta=document.getElementById('tinput');
-  const txt=ta.value.trim();
+function sendExam(){
+  var ta=document.getElementById('tinput');
+  var txt=ta.value.trim();
   if((!txt&&!imgData)||busy)return;
   busy=true;ta.value='';ta.style.height='auto';
   addUserMsg(txt,imgData?document.getElementById('ithumb').src:null);
-  const content=[];
-  if(imgData)content.push({type:'image',source:{type:'base64',media_type:imgType,data:imgData}});
+  var content=[];
+  if(imgData) content.push({type:'image',source:{type:'base64',media_type:imgType,data:imgData}});
   content.push({type:'text',text:txt||'(imagen adjunta)'});
   examHistory.push({role:'user',content:content.length===1?(txt||'(imagen adjunta)'):content});
   removeImg();
-  const lid=addLoader();
-  try{
-    const res=await fetch('/api/examen/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:examHistory,alumno,examenId:examData.id,preguntaNum:examPregunta+1,mensajeUsuario:txt})});
-    const d=await res.json();
-    removeLoader(lid);
-    const reply=d.content||'Error.';
-    examHistory.push({role:'assistant',content:reply});
-    renderBot(reply,true);
-    if(d.resultado==='ok'){examCorrect++;examPregunta++;examHistory=[];}
-    else if(d.resultado==='partial'){examPartial++;examPregunta++;examHistory=[];}
-    else if(d.resultado==='wrong'){examWrong++;examPregunta++;examHistory=[];}
-    if(examPregunta>=examData.total_preguntas&&d.resultado!=='ask'){endExam();}
-    else if(d.resultado!=='ask'){updateExamProgress();}
-  }catch(e){removeLoader(lid);addBubble('b','⚠️ Error de conexión.','');}
+  var lid=addLoader();
+  fetch('/api/examen/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages:examHistory,alumno:alumno,examenId:examData.id,preguntaNum:examPregunta+1,mensajeUsuario:txt})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      removeLoader(lid);
+      var reply=d.content||'Error.';
+      examHistory.push({role:'assistant',content:reply});
+      renderBot(reply,true);
+      if(d.resultado==='ok'){examCorrect++;examPregunta++;examHistory=[];}
+      else if(d.resultado==='partial'){examPartial++;examPregunta++;examHistory=[];}
+      else if(d.resultado==='wrong'){examWrong++;examPregunta++;examHistory=[];}
+      if(examPregunta>=examData.total_preguntas&&d.resultado!=='ask') endExam();
+      else if(d.resultado!=='ask') updateExamProgress();
+    })
+    .catch(function(e){removeLoader(lid);addBubble('b','Error de conexion.','');});
   busy=false;
 }
 
-async function endExam(){
+function endExam(){
   examMode=false;
   document.getElementById('exam-banner').style.display='none';
   document.getElementById('chips').style.display='flex';
-  const total=examCorrect+examPartial+examWrong;
-  const puntaje=total>0?Math.round(((examCorrect+examPartial*0.5)/total)*20*10)/10:0;
-  try{await fetch('/api/examen/finalizar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({examenId:examData.id,alumno,correctas:examCorrect,parciales:examPartial,incorrectas:examWrong,total})});}catch(e){}
+  var total=examCorrect+examPartial+examWrong;
+  var puntaje=total>0?Math.round(((examCorrect+examPartial*0.5)/total)*20*10)/10:0;
+  fetch('/api/examen/finalizar',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({examenId:examData.id,alumno:alumno,correctas:examCorrect,parciales:examPartial,incorrectas:examWrong,total:total})})
+    .catch(function(){});
   document.getElementById('res-score').textContent=puntaje.toFixed(1);
   document.getElementById('res-ok').textContent=examCorrect;
   document.getElementById('res-par').textContent=examPartial;
   document.getElementById('res-bad').textContent=examWrong;
-  const msg=puntaje>=14?'¡Excelente trabajo! Aprobaste el examen 🎉':puntaje>=11?'Aprobaste. Sigue practicando para mejorar.':'No alcanzaste el puntaje mínimo. Repasa los temas y vuelve a intentarlo.';
+  var msg=puntaje>=14?'Excelente! Aprobaste el examen.':puntaje>=11?'Aprobaste. Sigue practicando.':'No alcanzaste el minimo. Repasa los temas.';
   document.getElementById('res-msg').textContent=msg;
   document.getElementById('result-modal').classList.add('show');
 }
 
 function closeResultModal(){document.getElementById('result-modal').classList.remove('show');}
 
-// ── ENCUESTA ───────────────────────────────────────────────────────────────
 function initStars(){
-  [1,2,3,4].forEach(q=>{
-    const c=document.getElementById('stars-'+q);
+  [1,2,3,4].forEach(function(q){
+    var c=document.getElementById('stars-'+q);
     c.innerHTML='';surveyRatings[q]=0;
-    for(let i=1;i<=5;i++){
-      const s=document.createElement('span');s.className='star';s.textContent='★';s.dataset.q=q;s.dataset.v=i;
-      s.onclick=()=>setStars(q,i);c.appendChild(s);
+    for(var i=1;i<=5;i++){
+      var s=document.createElement('span');
+      s.className='star';s.textContent='★';
+      s.setAttribute('data-q',q);s.setAttribute('data-v',i);
+      s.onclick=function(){setStars(parseInt(this.getAttribute('data-q')),parseInt(this.getAttribute('data-v')));};
+      c.appendChild(s);
     }
   });
 }
 
 function setStars(q,val){
   surveyRatings[q]=val;
-  document.querySelectorAll('.star[data-q="'+q+'"]').forEach(s=>s.classList.toggle('on',parseInt(s.dataset.v)<=val));
+  document.querySelectorAll('.star[data-q="'+q+'"]').forEach(function(s){
+    s.classList.toggle('on',parseInt(s.getAttribute('data-v'))<=val);
+  });
 }
 
 function showSurvey(){initStars();document.getElementById('survey-modal').classList.add('show');}
 
-async function submitSurvey(){
+function submitSurvey(){
   document.getElementById('survey-modal').classList.remove('show');
-  const comment=document.getElementById('enc-comment').value.trim();
-  try{
-    await fetch('/api/encuesta',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({alumno,p1:surveyRatings[1],p2:surveyRatings[2],p3:surveyRatings[3],p4:surveyRatings[4],comentario:comment,sesionId})});
-  }catch(e){}
+  var comment=document.getElementById('enc-comment').value.trim();
+  fetch('/api/encuesta',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({alumno:alumno,p1:surveyRatings[1],p2:surveyRatings[2],p3:surveyRatings[3],p4:surveyRatings[4],comentario:comment,sesionId:sesionId})})
+    .catch(function(){});
   _doLogout();
 }
-
 function skipSurvey(){document.getElementById('survey-modal').classList.remove('show');_doLogout();}
 
-// ── RENDER ─────────────────────────────────────────────────────────────────
-function renderBot(raw,examMode=false){
-  let tone='',text=raw;
-  if(raw.startsWith('[ASK]')){tone='ask';text=raw.replace('[ASK]','').trim();}
-  else if(raw.startsWith('[OK]')){tone='ok';text=raw.replace('[OK]','').trim();}
-  else if(raw.startsWith('[PARTIAL]')){tone='ok';text=raw.replace('[PARTIAL]','').trim();}
-  else if(raw.startsWith('[WRONG]')){tone='wrong';text=raw.replace('[WRONG]','').trim();}
-  const{main,resources}=parseRes(text);
-  const w=document.createElement('div');w.className='msg b';
-  const b=document.createElement('div');b.className='bub'+(tone?' '+tone:'');b.textContent=main;w.appendChild(b);
-  if(!examMode&&resources.length){
-    const c=document.createElement('div');c.className='res-cards';
-    resources.forEach(r=>{
-      const rc=document.createElement('div');rc.className='rc';rc.onclick=()=>window.open(r.url,'_blank');
-      rc.innerHTML='<div class="ri '+(r.type==='video'?'yt':'pa')+'">'+(r.type==='video'?'▶':'📄')+'</div><div><div class="rt">'+esc(r.title)+'</div><div class="rs">'+(r.type==='video'?'YouTube':'Artículo científico')+'</div></div>';
+function renderBot(raw,isExam){
+  var tone='',text=raw;
+  if(raw.indexOf('[ASK]')===0){tone='ask';text=raw.substring(5).trim();}
+  else if(raw.indexOf('[OK]')===0){tone='ok';text=raw.substring(4).trim();}
+  else if(raw.indexOf('[PARTIAL]')===0){tone='ok';text=raw.substring(9).trim();}
+  else if(raw.indexOf('[WRONG]')===0){tone='wrong';text=raw.substring(7).trim();}
+  var parsed=parseRes(text);
+  var w=document.createElement('div');w.className='msg b';
+  var b=document.createElement('div');b.className='bub'+(tone?' '+tone:'');b.textContent=parsed.main;w.appendChild(b);
+  if(!isExam&&parsed.resources.length){
+    var c=document.createElement('div');c.className='res-cards';
+    parsed.resources.forEach(function(r){
+      var rc=document.createElement('div');rc.className='rc';
+      rc.onclick=function(){window.open(r.url,'_blank');};
+      rc.innerHTML='<div class="ri '+(r.type==='video'?'yt':'pa')+'">'+(r.type==='video'?'▶':'📄')+'</div><div><div class="rt">'+esc(r.title)+'</div><div class="rs">'+(r.type==='video'?'YouTube':'Articulo cientifico')+'</div></div>';
       c.appendChild(rc);
     });
     w.appendChild(c);
@@ -521,31 +565,43 @@ function renderBot(raw,examMode=false){
 }
 
 function parseRes(text){
-  const res=[],vr=/\[VIDEO:\s*([^|]+)\|\s*URL:\s*([^\]]+)\]/g,pr=/\[PAPER:\s*([^|]+)\|\s*FUENTE:[^|]+\|\s*URL:\s*([^\]]+)\]/g;
-  let m;
-  while((m=vr.exec(text))!==null)res.push({type:'video',title:m[1].trim(),url:m[2].trim()});
-  while((m=pr.exec(text))!==null)res.push({type:'paper',title:m[1].trim(),url:m[2].trim()});
-  return{main:text.replace(vr,'').replace(pr,'').trim(),resources:res};
+  var resources=[];
+  var vr=/\[VIDEO:\s*([^|]+)\|\s*URL:\s*([^\]]+)\]/g;
+  var pr=/\[PAPER:\s*([^|]+)\|\s*FUENTE:[^|]+\|\s*URL:\s*([^\]]+)\]/g;
+  var m;
+  while((m=vr.exec(text))!==null) resources.push({type:'video',title:m[1].trim(),url:m[2].trim()});
+  while((m=pr.exec(text))!==null) resources.push({type:'paper',title:m[1].trim(),url:m[2].trim()});
+  return{main:text.replace(vr,'').replace(pr,'').trim(),resources:resources};
 }
 
 function addUserMsg(txt,imgSrc){
-  const w=document.createElement('div');w.className='msg u';
-  if(imgSrc){const img=document.createElement('img');img.className='imgprev';img.src=imgSrc;w.appendChild(img);}
-  if(txt){const b=document.createElement('div');b.className='bub';b.textContent=txt;w.appendChild(b);}
+  var w=document.createElement('div');w.className='msg u';
+  if(imgSrc){var img=document.createElement('img');img.className='imgprev';img.src=imgSrc;w.appendChild(img);}
+  if(txt){var b=document.createElement('div');b.className='bub';b.textContent=txt;w.appendChild(b);}
   document.getElementById('msgs').appendChild(w);scrollB();
 }
 function addBubble(who,txt,tone){
-  const w=document.createElement('div');w.className='msg '+(who==='b'?'b':'u');
-  const b=document.createElement('div');b.className='bub'+(tone?' '+tone:'');b.textContent=txt;
+  var w=document.createElement('div');w.className='msg '+(who==='b'?'b':'u');
+  var b=document.createElement('div');b.className='bub'+(tone?' '+tone:'');b.textContent=txt;
   w.appendChild(b);document.getElementById('msgs').appendChild(w);scrollB();
 }
-function addLoader(){const d=document.createElement('div');d.className='loader';d.innerHTML='<span></span><span></span><span></span>';document.getElementById('msgs').appendChild(d);scrollB();return d;}
+function addLoader(){
+  var d=document.createElement('div');d.className='loader';
+  d.innerHTML='<span></span><span></span><span></span>';
+  document.getElementById('msgs').appendChild(d);scrollB();return d;
+}
 function removeLoader(el){if(el&&el.parentNode)el.remove();}
-function scrollB(){const m=document.getElementById('msgs');m.scrollTop=m.scrollHeight;}
+function scrollB(){var m=document.getElementById('msgs');m.scrollTop=m.scrollHeight;}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-const saved=localStorage.getItem('mb_alumno');
-if(saved){try{const s=JSON.parse(saved);alumno=s.alumno;sesionId=s.sesionId;startChat();}catch(e){localStorage.removeItem('mb_alumno');}}
+var saved=localStorage.getItem('mb_alumno');
+if(saved){
+  try{
+    var s=JSON.parse(saved);
+    alumno=s.alumno;sesionId=s.sesionId;
+    startChat();
+  }catch(e){localStorage.removeItem('mb_alumno');}
+}
 </script>
 </body>
 </html>
