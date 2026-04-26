@@ -64,25 +64,26 @@ PASO 2 — Evalúa: [OK], [PARTIAL] o [WRONG]
 - NUNCA contradigas el tejido u órgano indicado.
 - Sé alentador, nunca condescendiente.`;
 
-const SYSTEM_EXAMEN = `Eres MicroBot en MODO EXAMEN. Tu comportamiento cambia completamente:
+const SYSTEM_EXAMEN = `Eres MicroBot en MODO EXAMEN con preguntas secuenciales.
+
+== CONTEXTO ==
+El profesor ha preparado preguntas específicas. Se te indica cuál es la pregunta actual y cuál es la respuesta del alumno. Tu trabajo es evaluar si la respuesta es correcta.
 
 == REGLAS DE EXAMEN ==
-1. El alumno debe identificar lo que se le pregunta. NO des pistas, NO sugieras, NO des retroalimentación elaborada.
-2. Solo evalúa la respuesta del alumno como CORRECTA, PARCIALMENTE CORRECTA o INCORRECTA.
-3. NO incluyas [VIDEO:] ni [PAPER:] — esto es un examen, no una clase.
-4. Sé breve y objetivo.
+1. Evalúa SOLO la respuesta del alumno a la pregunta indicada.
+2. NO des pistas, NO des la respuesta correcta, NO incluyas recursos.
+3. Sé breve y objetivo.
+4. Acepta el tejido u órgano indicado en la pregunta como dato confirmado.
 
-== FORMATO EXAMEN ==
-Si CORRECTA → [OK]\n✅ Correcto.
-Si PARCIALMENTE CORRECTA → [PARTIAL]\n⚠️ Parcialmente correcto. [máximo 1 línea indicando qué faltó]
-Si INCORRECTA → [WRONG]\n❌ Incorrecto.
+== FORMATO ESTRICTO ==
+Si CORRECTA → [OK]
+✅ Correcto.
 
-No des la respuesta correcta cuando sea incorrecta — el alumno debe seguir intentando o el examen termina.
+Si PARCIALMENTE CORRECTA → [PARTIAL]
+⚠️ Parcialmente correcto. [máximo 1 línea de qué faltó, sin dar la respuesta]
 
-== CONTEXTO HISTOPATOLOGÍA EN EXAMEN ==
-- Acepta el tejido indicado como dato confirmado.
-- Si no se indicó tinción y es lámina histológica, pregunta solo la tinción (tag [ASK]) antes de evaluar.
-- El objetivo es evaluar si el alumno identifica correctamente la estructura o microorganismo.
+Si INCORRECTA → [WRONG]
+❌ Incorrecto. Intenta de nuevo o escribe "siguiente" para continuar.
 
 Responde siempre en español. Sé justo y objetivo.`;
 
@@ -156,12 +157,14 @@ app.post("/api/examen/crear", (req, res) => {
   try {
     const { nombre, descripcion, total_preguntas, modo, curso } = req.body;
     const db = loadDB();
+    const preguntas = (req.body.preguntas || []).filter(p => p.trim());
     const examen = {
       id:               Date.now(),
       nombre:           nombre || "Examen",
       descripcion:      descripcion || "",
       codigo:           makeCode(),
-      total_preguntas:  total_preguntas || 5,
+      total_preguntas:  preguntas.length || total_preguntas || 5,
+      preguntas:        preguntas,
       modo:             modo || "histo",
       curso:            curso || "",
       activo:           true,
@@ -180,7 +183,7 @@ app.post("/api/examen/verificar", (req, res) => {
     const db = loadDB();
     const examen = db.examenes.find(e => e.codigo === codigo.trim().toUpperCase() && e.activo);
     if (!examen) return res.status(404).json({ error: "Código de examen inválido o examen inactivo" });
-    res.json({ ok: true, examen: { id: examen.id, nombre: examen.nombre, descripcion: examen.descripcion, total_preguntas: examen.total_preguntas, modo: examen.modo } });
+    res.json({ ok: true, examen: { id: examen.id, nombre: examen.nombre, descripcion: examen.descripcion, total_preguntas: examen.total_preguntas, preguntas: examen.preguntas || [], modo: examen.modo } });
   } catch { res.status(500).json({ error: "Error" }); }
 });
 

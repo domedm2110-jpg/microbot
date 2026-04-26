@@ -444,9 +444,14 @@ function startExam(){
       var nl = String.fromCharCode(10);
       var msg = 'EXAMEN: ' + examData.nombre + nl;
       if(examData.descripcion) msg += examData.descripcion + nl;
-      msg += 'Total de preguntas: ' + examData.total_preguntas + nl + nl;
-      msg += 'Describe o sube la imagen de la lamina. No habra pistas ni recursos de apoyo.';
+      msg += nl + 'Total de preguntas: ' + examData.total_preguntas + nl + nl;
+      msg += '--- PREGUNTAS ---' + nl;
+      if(examData.preguntas && examData.preguntas.length > 0){
+        examData.preguntas.forEach(function(p,i){ msg += (i+1) + '. ' + p + nl; });
+      }
+      msg += nl + 'Responde la pregunta 1 para comenzar. Sin pistas ni recursos.';
       addBubble('b',msg,'ask');
+      askQuestion(0);
     })
     .catch(function(e){
       document.getElementById('exam-modal-err').textContent=e.message;
@@ -456,6 +461,14 @@ function startExam(){
 
 function updateExamProgress(){
   document.getElementById('exam-progress').textContent='Pregunta '+(examPregunta+1)+' de '+examData.total_preguntas;
+}
+
+function askQuestion(idx){
+  if(!examData.preguntas || examData.preguntas.length === 0) return;
+  if(idx >= examData.preguntas.length) return;
+  var nl = String.fromCharCode(10);
+  var msg = 'Pregunta ' + (idx+1) + ' de ' + examData.total_preguntas + ':' + nl + examData.preguntas[idx];
+  addBubble('b', msg, 'ask');
 }
 
 function sendExam(){
@@ -470,19 +483,26 @@ function sendExam(){
   examHistory.push({role:'user',content:content.length===1?(txt||'(imagen adjunta)'):content});
   removeImg();
   var lid=addLoader();
+  var currentQ = examData.preguntas && examData.preguntas[examPregunta] ? examData.preguntas[examPregunta] : '';
+  var contextMsg = currentQ ? '[PREGUNTA ACTUAL: ' + currentQ + '] [RESPUESTA DEL ALUMNO: ' + (txt||'(sin texto)') + ']' : (txt||'(sin texto)');
+  var sendMessages = [{role:'user',content:contextMsg}];
   fetch('/api/examen/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({messages:examHistory,alumno:alumno,examenId:examData.id,preguntaNum:examPregunta+1,mensajeUsuario:txt})})
+    body:JSON.stringify({messages:sendMessages,alumno:alumno,examenId:examData.id,preguntaNum:examPregunta+1,mensajeUsuario:txt})})
     .then(function(r){return r.json();})
     .then(function(d){
       removeLoader(lid);
       var reply=d.content||'Error.';
-      examHistory.push({role:'assistant',content:reply});
       renderBot(reply,true);
-      if(d.resultado==='ok'){examCorrect++;examPregunta++;examHistory=[];}
-      else if(d.resultado==='partial'){examPartial++;examPregunta++;examHistory=[];}
-      else if(d.resultado==='wrong'){examWrong++;examPregunta++;examHistory=[];}
-      if(examPregunta>=examData.total_preguntas&&d.resultado!=='ask') endExam();
-      else if(d.resultado!=='ask') updateExamProgress();
+      var avanzar = false;
+      if(d.resultado==='ok'){examCorrect++;avanzar=true;}
+      else if(d.resultado==='partial'){examPartial++;avanzar=true;}
+      else if(d.resultado==='wrong'){examWrong++;avanzar=true;}
+      if(avanzar){
+        examPregunta++;
+        examHistory=[];
+        if(examPregunta>=examData.total_preguntas){ endExam(); }
+        else { updateExamProgress(); setTimeout(function(){askQuestion(examPregunta);},600); }
+      }
     })
     .catch(function(e){removeLoader(lid);addBubble('b','Error de conexion.','');});
   busy=false;

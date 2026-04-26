@@ -198,6 +198,10 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Descripción / instrucciones (opcional)</label>
         <input id="ex-desc" placeholder="Ej: Identifica las estructuras en las láminas de tejido hepático" style="width:100%;padding:7px 10px;border:.5px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text)"/></div>
+      <div style="grid-column:1/-1"><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Preguntas del examen <span style="color:#D85A30">*</span> (una por línea)</label>
+        <textarea id="ex-preguntas" placeholder="Ej:&#10;¿Qué organela ves en el citoplasma con tinción HPTH?&#10;Describe la membrana basal de los sinusoides hepáticos&#10;¿Qué diferencia hay entre lisosomas y peroxisomas?" style="width:100%;padding:7px 10px;border:.5px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);height:120px;resize:vertical;font-family:inherit"></textarea>
+        <div style="font-size:10px;color:var(--text2);margin-top:3px">El bot presentará todas las preguntas al inicio y evaluará las respuestas una por una.</div>
+      </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button onclick="createExam()" style="padding:8px 18px;background:#1D9E75;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer">Crear y obtener código</button>
         <button onclick="document.getElementById('create-exam-form').style.display='none'" style="padding:8px 14px;background:var(--bg2);border:.5px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;color:var(--text2)">Cancelar</button>
@@ -445,8 +449,11 @@ async function createExam(){
   const nombre=document.getElementById('ex-nombre').value.trim();
   if(!nombre){alert('Ingresa el nombre del examen.');return;}
   try{
+    const preguntasRaw=document.getElementById('ex-preguntas').value.trim();
+    const preguntas=preguntasRaw.split('\n').map(p=>p.trim()).filter(p=>p.length>0);
+    if(preguntas.length===0){alert('Debes agregar al menos una pregunta.');return;}
     const r=await fetch('/api/examen/crear',{method:'POST',headers:{'Content-Type':'application/json','x-dash-key':dashKey},
-      body:JSON.stringify({nombre,descripcion:document.getElementById('ex-desc').value.trim(),total_preguntas:parseInt(document.getElementById('ex-total').value)||5,modo:document.getElementById('ex-modo').value,curso:document.getElementById('ex-curso').value.trim()})});
+      body:JSON.stringify({nombre,descripcion:document.getElementById('ex-desc').value.trim(),total_preguntas:preguntas.length,preguntas,modo:document.getElementById('ex-modo').value,curso:document.getElementById('ex-curso').value.trim()})});
     const d=await r.json();
     if(!d.ok)throw new Error(d.error);
     document.getElementById('exam-created').style.display='block';
