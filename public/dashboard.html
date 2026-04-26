@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>MicroBot — Panel Docente</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" onerror="window.Chart=null"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -228,13 +228,14 @@ async function doAuth(){
     const r = await fetch('/api/dashboard/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p})});
     if(!r.ok) throw new Error();
     dashKey = p;
+    document.getElementById('loading').style.display = 'none';
     document.getElementById('login-panel').style.display = 'none';
     document.getElementById('dash').style.display = 'block';
     await loadStats();
   }catch{
+    document.getElementById('loading').style.display = 'none';
     document.getElementById('err-msg').style.display = 'block';
   }
-  document.getElementById('loading').style.display = 'none';
 }
 
 async function loadStats(){
@@ -331,6 +332,11 @@ function renderStats(d){
 
 // ── CHARTS ─────────────────────────────────────────────────────────────────
 function renderDoughnut(id, labels, data, colors){
+  if(!window.Chart){
+    var el=document.getElementById(id);
+    if(el){var total=data.reduce(function(a,b){return a+b;},0);el.parentElement.innerHTML='<div style="font-size:12px;padding:8px">'+labels.map(function(l,i){return l+': <strong>'+data[i]+'</strong> ('+Math.round(data[i]/(total||1)*100)+'%)'}).join(' | ')+'</div>';}
+    return;
+  }
   if(charts[id]) charts[id].destroy();
   const ctx = document.getElementById(id).getContext('2d');
   charts[id] = new Chart(ctx,{
@@ -340,6 +346,11 @@ function renderDoughnut(id, labels, data, colors){
   });
 }
 function renderBar(id, labels, data, color){
+  if(!window.Chart){
+    var el=document.getElementById(id);
+    if(el){el.parentElement.innerHTML='<div style="font-size:12px;padding:8px">'+labels.map(function(l,i){return l+': <strong>'+data[i]+'</strong>'}).join(' | ')+'</div>';}
+    return;
+  }
   if(charts[id]) charts[id].destroy();
   const ctx = document.getElementById(id).getContext('2d');
   charts[id] = new Chart(ctx,{
@@ -349,6 +360,11 @@ function renderBar(id, labels, data, color){
   });
 }
 function renderLine(id, labels, data){
+  if(!window.Chart){
+    var el=document.getElementById(id);
+    if(el){el.parentElement.innerHTML='<div style="font-size:12px;padding:8px">'+labels.map(function(l,i){return l+': <strong>'+data[i]+'</strong>'}).join(' | ')+'</div>';}
+    return;
+  }
   if(charts[id]) charts[id].destroy();
   const ctx = document.getElementById(id).getContext('2d');
   charts[id] = new Chart(ctx,{
