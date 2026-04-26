@@ -175,6 +175,45 @@ tr:hover td{background:var(--bg2)}
     <!-- ACTIVIDAD RECIENTE -->
     <div class="section-title">Actividad reciente</div>
     <div class="act-list" id="act-list"></div>
+
+    <!-- EXAMENES -->
+    <div class="section-title" style="margin-top:24px">Exámenes <span id="exam-count"></span>
+      <button onclick="showCreateExam()" style="margin-left:auto;padding:5px 14px;background:#1D9E75;color:#fff;border:none;border-radius:20px;font-size:12px;cursor:pointer">+ Crear examen</button>
+    </div>
+
+    <!-- Crear examen form -->
+    <div id="create-exam-form" style="display:none;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Nombre del examen</label>
+          <input id="ex-nombre" placeholder="Ej: Práctica Lab 1 — Histo" style="width:100%;padding:7px 10px;border:.5px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text)"/></div>
+        <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">N° de preguntas</label>
+          <input id="ex-total" type="number" value="5" min="1" max="20" style="width:100%;padding:7px 10px;border:.5px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text)"/></div>
+        <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Modo</label>
+          <select id="ex-modo" style="width:100%;padding:7px 10px;border:.5px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text)">
+            <option value="histo">HistoLab</option><option value="bacteria">Bacterias</option>
+            <option value="lamina">Láminas</option><option value="general">General</option>
+          </select></div>
+        <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Curso (opcional)</label>
+          <input id="ex-curso" placeholder="Ej: Histopatología A" style="width:100%;padding:7px 10px;border:.5px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text)"/></div>
+      </div>
+      <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Descripción / instrucciones (opcional)</label>
+        <input id="ex-desc" placeholder="Ej: Identifica las estructuras en las láminas de tejido hepático" style="width:100%;padding:7px 10px;border:.5px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text)"/></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="createExam()" style="padding:8px 18px;background:#1D9E75;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer">Crear y obtener código</button>
+        <button onclick="document.getElementById('create-exam-form').style.display='none'" style="padding:8px 14px;background:var(--bg2);border:.5px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;color:var(--text2)">Cancelar</button>
+      </div>
+      <div id="exam-created" style="display:none;margin-top:14px;background:#E1F5EE;border:.5px solid #9FE1CB;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:#085041;margin-bottom:6px">✅ Examen creado. Comparte este código con tus alumnos:</div>
+        <div id="exam-code-display" style="font-size:36px;font-weight:700;color:#1D9E75;letter-spacing:6px"></div>
+      </div>
+    </div>
+
+    <div id="exams-list"></div>
+
+    <!-- ENCUESTA -->
+    <div class="section-title" style="margin-top:24px">Encuesta de satisfacción</div>
+    <div id="survey-stats"></div>
+
   </main>
 </div>
 
@@ -317,6 +356,91 @@ function renderLine(id, labels, data){
     data:{labels,datasets:[{data,borderColor:'#1D9E75',backgroundColor:'#1D9E7522',borderWidth:2,pointRadius:3,tension:0.3,fill:true}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}}
   });
+}
+
+// Exámenes
+function renderExams(examenes){
+  document.getElementById('exam-count').textContent=(examenes||[]).length+' creados';
+  const el=document.getElementById('exams-list');
+  if(!examenes||!examenes.length){el.innerHTML='<div class="empty" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r)">No hay exámenes creados aún</div>';return;}
+  el.innerHTML=examenes.map(ex=>{
+    const rows=ex.resultados||[];
+    const prom=ex.promedio_puntaje!==null?ex.promedio_puntaje.toFixed(1):'—';
+    const color=ex.activo?'#1D9E75':'#888780';
+    return `<div style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:500;color:var(--text)">${esc(ex.nombre)}</div>
+        <div style="font-size:10px;padding:2px 9px;border-radius:20px;background:${ex.activo?'#E1F5EE':'var(--bg2)'};color:${color};border:.5px solid ${color}">${ex.activo?'Activo':'Cerrado'}</div>
+        <div style="margin-left:auto;font-size:28px;font-weight:700;color:#1D9E75;letter-spacing:4px">${ex.codigo}</div>
+        <button onclick="toggleExam(${ex.id},${!ex.activo})" style="padding:4px 12px;border-radius:20px;border:.5px solid var(--border);font-size:11px;cursor:pointer;background:var(--bg2);color:var(--text2)">${ex.activo?'Cerrar':'Reabrir'}</button>
+      </div>
+      <div style="display:flex;gap:16px;font-size:12px;color:var(--text2);margin-bottom:10px">
+        <span>📋 ${ex.total_preguntas} preguntas</span>
+        <span>👥 ${ex.total_rendidos} alumnos</span>
+        <span>📊 Promedio: <strong style="color:var(--text)">${prom}/20</strong></span>
+        <span>🎓 ${ex.curso||'Todos los cursos'}</span>
+      </div>
+      ${rows.length?`<table style="width:100%;font-size:12px;border-collapse:collapse">
+        <thead><tr style="background:var(--bg2)">
+          <th style="padding:6px 10px;text-align:left;font-size:11px;color:var(--text2);border-bottom:.5px solid var(--border)">Alumno</th>
+          <th style="padding:6px 10px;text-align:center;font-size:11px;color:var(--text2);border-bottom:.5px solid var(--border)">✅</th>
+          <th style="padding:6px 10px;text-align:center;font-size:11px;color:var(--text2);border-bottom:.5px solid var(--border)">⚠️</th>
+          <th style="padding:6px 10px;text-align:center;font-size:11px;color:var(--text2);border-bottom:.5px solid var(--border)">❌</th>
+          <th style="padding:6px 10px;text-align:center;font-size:11px;color:var(--text2);border-bottom:.5px solid var(--border)">Nota</th>
+        </tr></thead>
+        <tbody>${rows.map(r=>`<tr>
+          <td style="padding:6px 10px;border-bottom:.5px solid var(--border)">${esc(r.alumno_nombre||'')} <span style="color:var(--text2);font-size:10px">${r.alumno_codigo||''}</span></td>
+          <td style="padding:6px 10px;border-bottom:.5px solid var(--border);text-align:center;color:#1D9E75">${r.correctas||0}</td>
+          <td style="padding:6px 10px;border-bottom:.5px solid var(--border);text-align:center;color:#BA7517">${r.parciales||0}</td>
+          <td style="padding:6px 10px;border-bottom:.5px solid var(--border);text-align:center;color:#D85A30">${r.incorrectas||0}</td>
+          <td style="padding:6px 10px;border-bottom:.5px solid var(--border);text-align:center;font-weight:600;color:${r.puntaje>=14?'#1D9E75':r.puntaje>=11?'#BA7517':'#D85A30'}">${(r.puntaje||0).toFixed(1)}</td>
+        </tr>`).join('')}</tbody>
+      </table>`:'<div style="font-size:12px;color:var(--text2);padding:6px 0">Ningún alumno ha rendido este examen aún.</div>'}
+    </div>`;
+  }).join('');
+}
+
+// Encuesta
+function renderSurvey(enc){
+  const el=document.getElementById('survey-stats');
+  if(!enc){el.innerHTML='<div class="empty" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r)">Aún no hay encuestas respondidas</div>';return;}
+  const stars=n=>Math.round(n)>0?'★'.repeat(Math.round(n))+'☆'.repeat(5-Math.round(n)):'—';
+  el.innerHTML=`<div style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+      <div style="text-align:center"><div style="font-size:28px;font-weight:600;color:#BA7517">${enc.p1_utilidad.toFixed(1)}</div><div style="font-size:11px;color:var(--text2)">Utilidad</div><div style="color:#BA7517">${stars(enc.p1_utilidad)}</div></div>
+      <div style="text-align:center"><div style="font-size:28px;font-weight:600;color:#BA7517">${enc.p2_facilidad.toFixed(1)}</div><div style="font-size:11px;color:var(--text2)">Facilidad de uso</div><div style="color:#BA7517">${stars(enc.p2_facilidad)}</div></div>
+      <div style="text-align:center"><div style="font-size:28px;font-weight:600;color:#BA7517">${enc.p3_recomendaria.toFixed(1)}</div><div style="font-size:11px;color:var(--text2)">Lo recomendaría</div><div style="color:#BA7517">${stars(enc.p3_recomendaria)}</div></div>
+      <div style="text-align:center"><div style="font-size:28px;font-weight:600;color:#BA7517">${enc.p4_aprendizaje.toFixed(1)}</div><div style="font-size:11px;color:var(--text2)">Mejoró aprendizaje</div><div style="color:#BA7517">${stars(enc.p4_aprendizaje)}</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">${enc.total} alumnos respondieron</div>
+    ${enc.comentarios&&enc.comentarios.length?`<div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:8px">Comentarios recientes:</div>
+    ${enc.comentarios.map(c=>`<div style="padding:8px 10px;background:var(--bg2);border-radius:6px;margin-bottom:6px;font-size:12px"><strong style="color:var(--text)">${esc(c.nombre||'Alumno')}</strong> <span style="color:var(--text2);font-size:10px">${c.fecha||''}</span><br/>${esc(c.texto)}</div>`).join('')}`:''}
+  </div>`;
+}
+
+function showCreateExam(){
+  const f=document.getElementById('create-exam-form');
+  f.style.display=f.style.display==='none'?'block':'none';
+  document.getElementById('exam-created').style.display='none';
+}
+
+async function createExam(){
+  const nombre=document.getElementById('ex-nombre').value.trim();
+  if(!nombre){alert('Ingresa el nombre del examen.');return;}
+  try{
+    const r=await fetch('/api/examen/crear',{method:'POST',headers:{'Content-Type':'application/json','x-dash-key':dashKey},
+      body:JSON.stringify({nombre,descripcion:document.getElementById('ex-desc').value.trim(),total_preguntas:parseInt(document.getElementById('ex-total').value)||5,modo:document.getElementById('ex-modo').value,curso:document.getElementById('ex-curso').value.trim()})});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error);
+    document.getElementById('exam-created').style.display='block';
+    document.getElementById('exam-code-display').textContent=d.examen.codigo;
+    await loadStats();
+  }catch(e){alert('Error: '+e.message);}
+}
+
+async function toggleExam(id,activo){
+  await fetch('/api/examen/estado',{method:'POST',headers:{'Content-Type':'application/json','x-dash-key':dashKey},body:JSON.stringify({examenId:id,activo})});
+  await loadStats();
 }
 
 async function exportCSV(){

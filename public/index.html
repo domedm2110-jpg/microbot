@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>MicroBot — Laboratorio Virtual</title>
+<title>MicroBot / HistoLab</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -99,6 +99,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 #msgs::-webkit-scrollbar{width:4px}
 #msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 @media(max-width:480px){body{padding:0}#app{height:100vh;border-radius:0;border:none}}
+#exam-banner{display:none;padding:7px 14px;background:#BA7517;color:#fff;font-size:12px;font-weight:500;flex-shrink:0;align-items:center;gap:8px;justify-content:space-between}
+#exam-progress{font-size:11px;opacity:.85}
+#exam-end-btn{padding:4px 12px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:20px;font-size:11px;color:#fff;cursor:pointer}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--bg);border-radius:16px;padding:28px;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.modal-box h2{font-size:18px;font-weight:600;color:var(--text);margin-bottom:8px}
+.modal-box p{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6}
+.modal-field{margin-bottom:12px}
+.modal-field label{display:block;font-size:11.5px;color:var(--text2);margin-bottom:4px;font-weight:500}
+.modal-field input{width:100%;padding:9px 12px;border:.5px solid var(--border);border-radius:var(--rs);font-size:14px;background:var(--bg);color:var(--text);font-family:inherit}
+.modal-field input:focus{outline:none;border-color:var(--teal)}
+.modal-actions{display:flex;gap:8px;margin-top:6px}
+.btn-modal{flex:1;padding:10px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none}
+.btn-cancel{background:var(--bg2);color:var(--text2)}
+.btn-ok{background:var(--teal);color:#fff}
+.btn-ok:hover{background:var(--teal-d)}
+.exam-result{text-align:center;padding:20px}
+.exam-score{font-size:56px;font-weight:700;color:var(--teal);line-height:1}
+.exam-score-label{font-size:13px;color:var(--text2);margin-top:4px}
+.exam-breakdown{display:flex;justify-content:center;gap:20px;margin:16px 0}
+.eb-item{text-align:center}
+.eb-val{font-size:22px;font-weight:600}
+.eb-lbl{font-size:11px;color:var(--text2)}
+.eb-ok{color:#1D9E75}.eb-par{color:#BA7517}.eb-bad{color:#D85A30}
+.star-row{display:flex;gap:6px;margin-top:6px}
+.star{font-size:24px;cursor:pointer;opacity:.3;transition:opacity .15s}
+.star.on{opacity:1}
+.enc-textarea{width:100%;padding:8px 11px;border:.5px solid var(--border);border-radius:var(--rs);font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;height:70px;margin-top:6px}
+.enc-textarea:focus{outline:none;border-color:var(--teal)}
 </style>
 </head>
 <body>
@@ -136,6 +166,74 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- ── MODALES ───────────────────────────────────────────────────────────────── -->
+<!-- Modal: ingresar código de examen -->
+<div class="modal-overlay" id="exam-modal">
+  <div class="modal-box">
+    <h2>📝 Modo Examen</h2>
+    <p>Ingresa el código que te dio tu profesor para comenzar el examen. No habrá pistas ni recursos de apoyo.</p>
+    <div class="modal-field">
+      <label>Código de examen</label>
+      <input id="exam-code-input" type="text" placeholder="Ej: AB3X7K" style="text-transform:uppercase;letter-spacing:2px;font-size:18px;text-align:center"/>
+    </div>
+    <div id="exam-modal-err" style="font-size:12px;color:#D85A30;margin-bottom:8px;display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-modal btn-cancel" onclick="closeExamModal()">Cancelar</button>
+      <button class="btn-modal btn-ok" onclick="startExam()">Comenzar examen →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: resultado del examen -->
+<div class="modal-overlay" id="result-modal">
+  <div class="modal-box">
+    <h2>📊 Resultado del Examen</h2>
+    <div class="exam-result">
+      <div class="exam-score" id="res-score">—</div>
+      <div class="exam-score-label">sobre 20</div>
+      <div class="exam-breakdown">
+        <div class="eb-item"><div class="eb-val eb-ok" id="res-ok">0</div><div class="eb-lbl">Correctas</div></div>
+        <div class="eb-item"><div class="eb-val eb-par" id="res-par">0</div><div class="eb-lbl">Parciales</div></div>
+        <div class="eb-item"><div class="eb-val eb-bad" id="res-bad">0</div><div class="eb-lbl">Incorrectas</div></div>
+      </div>
+      <p id="res-msg" style="font-size:13px;color:var(--text2);margin:0"></p>
+    </div>
+    <button class="btn-modal btn-ok" style="width:100%;margin-top:16px" onclick="closeResultModal()">Continuar →</button>
+  </div>
+</div>
+
+<!-- Modal: encuesta de satisfacción -->
+<div class="modal-overlay" id="survey-modal">
+  <div class="modal-box">
+    <h2>⭐ ¿Cómo fue tu experiencia?</h2>
+    <p>Solo 4 preguntas rápidas. Tus respuestas ayudan a mejorar el chatbot.</p>
+    <div class="modal-field">
+      <label>1. ¿Qué tan útil fue MicroBot para tu aprendizaje?</label>
+      <div class="star-row" id="stars-1"></div>
+    </div>
+    <div class="modal-field">
+      <label>2. ¿Qué tan fácil fue usar el chatbot?</label>
+      <div class="star-row" id="stars-2"></div>
+    </div>
+    <div class="modal-field">
+      <label>3. ¿Lo recomendarías a otros alumnos?</label>
+      <div class="star-row" id="stars-3"></div>
+    </div>
+    <div class="modal-field">
+      <label>4. ¿El chatbot mejoró tu comprensión del tema?</label>
+      <div class="star-row" id="stars-4"></div>
+    </div>
+    <div class="modal-field">
+      <label>Comentario opcional</label>
+      <textarea class="enc-textarea" id="enc-comment" placeholder="¿Qué mejorarías? ¿Qué te gustó más?"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal btn-cancel" onclick="skipSurvey()">Omitir</button>
+      <button class="btn-modal btn-ok" onclick="submitSurvey()">Enviar respuestas</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── CHAT ────────────────────────────────────────────────────────────────── -->
 <div id="chat-screen">
 <div id="app">
@@ -144,18 +242,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
     </div>
     <div>
-      <div class="htitle">MicroBot — Laboratorio Virtual</div>
+      <div class="htitle">MicroBot / HistoLab</div>
       <div class="hsub">Microbiología · Histopatología · Bacteriología · Ambiental</div>
     </div>
     <span id="user-chip">Alumno</span>
     <button id="logout-btn" onclick="doLogout()">Salir</button>
   </div>
+  <div id="exam-banner">
+    <span>📝 MODO EXAMEN — <span id="exam-name-label"></span></span>
+    <span id="exam-progress">Pregunta 1 de 5</span>
+    <button id="exam-end-btn" onclick="endExam()">Finalizar</button>
+  </div>
   <div id="tabs">
     <button class="tab on" onclick="setTab(this,'general','General')">Consulta general</button>
     <button class="tab" onclick="setTab(this,'lamina','Lámina')">Identificar lámina</button>
-    <button class="tab" onclick="setTab(this,'histo','Histopatología')">Histopatología</button>
+    <button class="tab" onclick="setTab(this,'histo','HistoLab')">🔬 HistoLab</button>
     <button class="tab" onclick="setTab(this,'bacteria','Bacterias')">Bacterias</button>
     <button class="tab" onclick="setTab(this,'ambiental','Ambiental')">Ambiental</button>
+    <button class="tab" style="background:#BA7517;color:#fff;border-color:#BA7517" onclick="openExamModal()">📝 Examen</button>
   </div>
   <div id="chips"></div>
   <div id="msgs"></div>
@@ -166,12 +270,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button id="irem" onclick="removeImg()">✕</button>
     </div>
     <div id="irow">
-      <label for="finput" title="Adjuntar imagen">
+      <label for="finput" title="Adjuntar imagen desde galería">
         <div class="ibtn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         </div>
       </label>
       <input type="file" id="finput" accept="image/*" onchange="handleImg(event)"/>
+      <label for="camerainput" title="Tomar foto con la cámara">
+        <div class="ibtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+      </label>
+      <input type="file" id="camerainput" accept="image/*" capture="environment" onchange="handleImg(event)" style="display:none"/>
       <textarea id="tinput" placeholder="Escribe tu consulta o hipótesis..." onkeydown="onKey(event)" oninput="rsz(this)"></textarea>
       <button id="sbtn" class="ibtn" onclick="send()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -182,10 +292,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <script>
-const CHIPS={general:['Tinción de Gram','Diferencia cocos y bacilos','Coliformes en agua','Hongos en lámina'],lamina:['Vi cocos en racimo Gram +','Bacilos con esporas terminales','Filamentos ramificados','Células ovoides que brotan'],histo:['Células en anillo de sello','Inflamación granulomatosa','Necrosis caseosa','Células en panal de abeja'],bacteria:['Staphylococcus vs Streptococcus','BAAR positivo en ZN','Espirales en campo oscuro','Bacilos anaerobios'],ambiental:['Coliformes totales y fecales','Biopelículas en agua','NMP en muestra de río','Hongos en suelo agrícola']};
-const PLACEHOLDERS={general:'Escribe tu consulta...',lamina:'Sube una imagen o describe la lámina...',histo:'Describe lo que observas en el tejido...',bacteria:'Describe la bacteria o tinción...',ambiental:'Consulta sobre agua, suelo, coliformes...'};
+const CHIPS={general:['Tinción de Gram','Diferencia cocos y bacilos','Coliformes en agua','Hongos en lámina'],lamina:['Vi cocos en racimo Gram +','Bacilos con esporas terminales','Filamentos ramificados','Células ovoides que brotan'],histo:['Tinción H&E — tejido hepático','Tinción PAS — tejido renal','Ziehl-Neelsen — tejido pulmonar','Masson — tejido cardíaco'],bacteria:['Staphylococcus vs Streptococcus','BAAR positivo en ZN','Espirales en campo oscuro','Bacilos anaerobios'],ambiental:['Coliformes totales y fecales','Biopelículas en agua','NMP en muestra de río','Hongos en suelo agrícola']};
+const PLACEHOLDERS={general:'Escribe tu consulta...',lamina:'Sube una imagen o describe la lámina...',histo:'Indica el tejido y la tinción usada, o sube la foto de la lámina...',bacteria:'Describe la bacteria o tinción...',ambiental:'Consulta sobre agua, suelo, coliformes...'};
 
-let alumno=null, sesionId=null, mode='general', history=[], imgData=null, imgType=null, busy=false, totalMsgs=0;
+let alumno=null,sesionId=null,mode='general',history=[],imgData=null,imgType=null,busy=false,totalMsgs=0;
+let examMode=false,examData=null,examPregunta=0,examCorrect=0,examPartial=0,examWrong=0,examHistory=[];
+let surveyRatings={1:0,2:0,3:0,4:0};
 
 // ── LOGIN ──────────────────────────────────────────────────────────────────
 async function doLogin(){
@@ -197,7 +309,7 @@ async function doLogin(){
     const r=await fetch('/api/registro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,codigo,curso})});
     const d=await r.json();
     if(!d.ok)throw new Error(d.error);
-    alumno=d.alumno; sesionId=d.sesionId;
+    alumno=d.alumno;sesionId=d.sesionId;
     localStorage.setItem('mb_alumno',JSON.stringify({alumno,sesionId}));
     startChat();
   }catch(e){alert('Error al registrar: '+e.message);}
@@ -208,25 +320,41 @@ function startChat(){
   document.getElementById('chat-screen').style.display='block';
   document.getElementById('user-chip').textContent=alumno.nombre.split(' ')[0]+' · '+alumno.codigo;
   setTab(document.querySelector('.tab.on'),'general','General');
-  addBubble('b',`¡Hola, ${alumno.nombre.split(' ')[0]}! Soy MicroBot 🔬\n\nPuedo ayudarte a identificar:\n• Láminas microbiológicas (Gram, Ziehl-Neelsen, KOH...)\n• Bacterias por morfología y tinción\n• Láminas histopatológicas (tejidos, neoplasias...)\n• Microorganismos ambientales\n\nSube una imagen o describe lo que ves → te preguntaré primero qué crees que es. ¡Así aprendes más!`,'');
-  window.addEventListener('beforeunload',()=>{
-    if(sesionId) navigator.sendBeacon('/api/cerrar-sesion',JSON.stringify({sesionId,totalMsgs}));
-  });
+  addBubble('b','¡Hola, '+alumno.nombre.split(' ')[0]+'! Soy MicroBot / HistoLab 🔬
+
+Puedo ayudarte a identificar:
+• Láminas histopatológicas → usa el tab 🔬 HistoLab
+• Láminas microbiológicas (Gram, Ziehl-Neelsen, KOH...)
+• Bacterias por morfología y tinción
+• Microorganismos ambientales
+
+📷 Puedes subir fotos o tomar foto directamente con la cámara.
+
+En HistoLab siempre te preguntaré la tinción y el tejido antes de identificar. ¡Así el diagnóstico es exacto!
+
+📝 ¿Tu profesor te dio un código de examen? Usa el botón naranja "Examen".','');
+  window.addEventListener('beforeunload',()=>{if(sesionId)navigator.sendBeacon('/api/cerrar-sesion',JSON.stringify({sesionId,totalMsgs}));});
+  initStars();
 }
 
 function doLogout(){
-  if(sesionId) fetch('/api/cerrar-sesion',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sesionId,totalMsgs})});
+  if(totalMsgs>0){showSurvey();}
+  else{_doLogout();}
+}
+function _doLogout(){
+  if(sesionId)fetch('/api/cerrar-sesion',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sesionId,totalMsgs})});
   localStorage.removeItem('mb_alumno');
-  alumno=null; sesionId=null; history=[]; totalMsgs=0;
+  alumno=null;sesionId=null;history=[];totalMsgs=0;examMode=false;
   document.getElementById('chat-screen').style.display='none';
   document.getElementById('login-screen').style.display='block';
+  document.getElementById('msgs').innerHTML='';
 }
 
 // ── TABS ───────────────────────────────────────────────────────────────────
 function setTab(btn,m,label){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-  btn.classList.add('on'); mode=m;
-  document.getElementById('tinput').placeholder=PLACEHOLDERS[m];
+  btn.classList.add('on');mode=m;
+  document.getElementById('tinput').placeholder=PLACEHOLDERS[m]||'Escribe tu consulta...';
   document.getElementById('chips').innerHTML=(CHIPS[m]||CHIPS.general).map(x=>`<span class="chip" onclick="useChip(this.textContent)">${x}</span>`).join('');
 }
 function useChip(t){document.getElementById('tinput').value=t;send();}
@@ -241,37 +369,157 @@ function handleImg(e){
   r.onload=ev=>{imgData=ev.target.result.split(',')[1];document.getElementById('prevbar').style.display='flex';document.getElementById('ithumb').src=ev.target.result;document.getElementById('iname').textContent=f.name;};
   r.readAsDataURL(f);
 }
-function removeImg(){imgData=null;imgType=null;document.getElementById('prevbar').style.display='none';document.getElementById('finput').value='';}
+function removeImg(){imgData=null;imgType=null;document.getElementById('prevbar').style.display='none';document.getElementById('finput').value='';document.getElementById('camerainput').value='';}
 
-// ── SEND ───────────────────────────────────────────────────────────────────
+// ── SEND NORMAL ────────────────────────────────────────────────────────────
 async function send(){
+  if(examMode){sendExam();return;}
   const ta=document.getElementById('tinput');
   const txt=ta.value.trim();
   if((!txt&&!imgData)||busy)return;
-  busy=true; ta.value=''; ta.style.height='auto';
-  const modeTag=`[MODO: ${mode.toUpperCase()}] `;
-  const fullTxt=modeTag+(txt||'(imagen adjunta para identificar)');
+  busy=true;ta.value='';ta.style.height='auto';
+  const modeTag='[MODO: '+mode.toUpperCase()+'] ';
+  const fullTxt=modeTag+(txt||'(imagen adjunta)');
   addUserMsg(txt,imgData?document.getElementById('ithumb').src:null);
   const content=[];
   if(imgData)content.push({type:'image',source:{type:'base64',media_type:imgType,data:imgData}});
   content.push({type:'text',text:fullTxt});
   history.push({role:'user',content:content.length===1?fullTxt:content});
-  totalMsgs++;
-  removeImg();
+  totalMsgs++;removeImg();
   const lid=addLoader();
   try{
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,alumno,sesionId,modo:mode,mensajeUsuario:txt})});
     const d=await res.json();
     removeLoader(lid);
-    const reply=d.content||'Error al obtener respuesta.';
+    const reply=d.content||'Error.';
     history.push({role:'assistant',content:reply});
     renderBot(reply);
   }catch(e){removeLoader(lid);addBubble('b','⚠️ Error de conexión. Intenta nuevamente.','');}
   busy=false;
 }
 
+// ── MODO EXAMEN ────────────────────────────────────────────────────────────
+function openExamModal(){
+  document.getElementById('exam-modal').classList.add('show');
+  document.getElementById('exam-code-input').value='';
+  document.getElementById('exam-modal-err').style.display='none';
+  document.getElementById('exam-code-input').focus();
+}
+function closeExamModal(){document.getElementById('exam-modal').classList.remove('show');}
+
+async function startExam(){
+  const code=document.getElementById('exam-code-input').value.trim().toUpperCase();
+  if(!code){document.getElementById('exam-modal-err').textContent='Ingresa el código.';document.getElementById('exam-modal-err').style.display='block';return;}
+  try{
+    const r=await fetch('/api/examen/verificar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo:code})});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error||'Código inválido');
+    examData=d.examen;examMode=true;examPregunta=0;examCorrect=0;examPartial=0;examWrong=0;examHistory=[];
+    closeExamModal();
+    document.getElementById('exam-banner').style.display='flex';
+    document.getElementById('exam-name-label').textContent=examData.nombre;
+    updateExamProgress();
+    document.getElementById('msgs').innerHTML='';
+    document.getElementById('chips').style.display='none';
+    addBubble('b','📝 EXAMEN INICIADO: '+examData.nombre+'
+
+'+
+      (examData.descripcion?examData.descripcion+'
+
+':'')+
+      'Total de preguntas: '+examData.total_preguntas+'
+
+Describe o sube la imagen de la lámina que te indicó el profesor para comenzar. En este modo no habrá pistas ni materiales de apoyo.','ask');
+  }catch(e){
+    document.getElementById('exam-modal-err').textContent=e.message;
+    document.getElementById('exam-modal-err').style.display='block';
+  }
+}
+
+function updateExamProgress(){
+  document.getElementById('exam-progress').textContent='Pregunta '+(examPregunta+1)+' de '+examData.total_preguntas;
+}
+
+async function sendExam(){
+  const ta=document.getElementById('tinput');
+  const txt=ta.value.trim();
+  if((!txt&&!imgData)||busy)return;
+  busy=true;ta.value='';ta.style.height='auto';
+  addUserMsg(txt,imgData?document.getElementById('ithumb').src:null);
+  const content=[];
+  if(imgData)content.push({type:'image',source:{type:'base64',media_type:imgType,data:imgData}});
+  content.push({type:'text',text:txt||'(imagen adjunta)'});
+  examHistory.push({role:'user',content:content.length===1?(txt||'(imagen adjunta)'):content});
+  removeImg();
+  const lid=addLoader();
+  try{
+    const res=await fetch('/api/examen/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:examHistory,alumno,examenId:examData.id,preguntaNum:examPregunta+1,mensajeUsuario:txt})});
+    const d=await res.json();
+    removeLoader(lid);
+    const reply=d.content||'Error.';
+    examHistory.push({role:'assistant',content:reply});
+    renderBot(reply,true);
+    if(d.resultado==='ok'){examCorrect++;examPregunta++;examHistory=[];}
+    else if(d.resultado==='partial'){examPartial++;examPregunta++;examHistory=[];}
+    else if(d.resultado==='wrong'){examWrong++;examPregunta++;examHistory=[];}
+    if(examPregunta>=examData.total_preguntas&&d.resultado!=='ask'){endExam();}
+    else if(d.resultado!=='ask'){updateExamProgress();}
+  }catch(e){removeLoader(lid);addBubble('b','⚠️ Error de conexión.','');}
+  busy=false;
+}
+
+async function endExam(){
+  examMode=false;
+  document.getElementById('exam-banner').style.display='none';
+  document.getElementById('chips').style.display='flex';
+  const total=examCorrect+examPartial+examWrong;
+  const puntaje=total>0?Math.round(((examCorrect+examPartial*0.5)/total)*20*10)/10:0;
+  try{await fetch('/api/examen/finalizar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({examenId:examData.id,alumno,correctas:examCorrect,parciales:examPartial,incorrectas:examWrong,total})});}catch(e){}
+  document.getElementById('res-score').textContent=puntaje.toFixed(1);
+  document.getElementById('res-ok').textContent=examCorrect;
+  document.getElementById('res-par').textContent=examPartial;
+  document.getElementById('res-bad').textContent=examWrong;
+  const msg=puntaje>=14?'¡Excelente trabajo! Aprobaste el examen 🎉':puntaje>=11?'Aprobaste. Sigue practicando para mejorar.':'No alcanzaste el puntaje mínimo. Repasa los temas y vuelve a intentarlo.';
+  document.getElementById('res-msg').textContent=msg;
+  document.getElementById('result-modal').classList.add('show');
+}
+
+function closeResultModal(){document.getElementById('result-modal').classList.remove('show');}
+
+// ── ENCUESTA ───────────────────────────────────────────────────────────────
+function initStars(){
+  [1,2,3,4].forEach(q=>{
+    const c=document.getElementById('stars-'+q);
+    c.innerHTML='';surveyRatings[q]=0;
+    for(let i=1;i<=5;i++){
+      const s=document.createElement('span');s.className='star';s.textContent='★';s.dataset.q=q;s.dataset.v=i;
+      s.onclick=()=>setStars(q,i);c.appendChild(s);
+    }
+  });
+}
+
+function setStars(q,val){
+  surveyRatings[q]=val;
+  document.querySelectorAll('.star[data-q="'+q+'"]').forEach(s=>s.classList.toggle('on',parseInt(s.dataset.v)<=val));
+}
+
+function showSurvey(){initStars();document.getElementById('survey-modal').classList.add('show');}
+
+async function submitSurvey(){
+  document.getElementById('survey-modal').classList.remove('show');
+  const comment=document.getElementById('enc-comment').value.trim();
+  try{
+    await fetch('/api/encuesta',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({alumno,p1:surveyRatings[1],p2:surveyRatings[2],p3:surveyRatings[3],p4:surveyRatings[4],comentario:comment,sesionId})});
+  }catch(e){}
+  _doLogout();
+}
+
+function skipSurvey(){document.getElementById('survey-modal').classList.remove('show');_doLogout();}
+
 // ── RENDER ─────────────────────────────────────────────────────────────────
-function renderBot(raw){
+function renderBot(raw,examMode=false){
   let tone='',text=raw;
   if(raw.startsWith('[ASK]')){tone='ask';text=raw.replace('[ASK]','').trim();}
   else if(raw.startsWith('[OK]')){tone='ok';text=raw.replace('[OK]','').trim();}
@@ -280,11 +528,11 @@ function renderBot(raw){
   const{main,resources}=parseRes(text);
   const w=document.createElement('div');w.className='msg b';
   const b=document.createElement('div');b.className='bub'+(tone?' '+tone:'');b.textContent=main;w.appendChild(b);
-  if(resources.length){
+  if(!examMode&&resources.length){
     const c=document.createElement('div');c.className='res-cards';
     resources.forEach(r=>{
       const rc=document.createElement('div');rc.className='rc';rc.onclick=()=>window.open(r.url,'_blank');
-      rc.innerHTML=`<div class="ri ${r.type==='video'?'yt':'pa'}">${r.type==='video'?'▶':'📄'}</div><div><div class="rt">${esc(r.title)}</div><div class="rs">${r.type==='video'?'YouTube — ver video':'Artículo científico'}</div></div>`;
+      rc.innerHTML='<div class="ri '+(r.type==='video'?'yt':'pa')+'">'+(r.type==='video'?'▶':'📄')+'</div><div><div class="rt">'+esc(r.title)+'</div><div class="rs">'+(r.type==='video'?'YouTube':'Artículo científico')+'</div></div>';
       c.appendChild(rc);
     });
     w.appendChild(c);
@@ -307,16 +555,15 @@ function addUserMsg(txt,imgSrc){
   document.getElementById('msgs').appendChild(w);scrollB();
 }
 function addBubble(who,txt,tone){
-  const w=document.createElement('div');w.className=`msg ${who}`;
+  const w=document.createElement('div');w.className='msg '+(who==='b'?'b':'u');
   const b=document.createElement('div');b.className='bub'+(tone?' '+tone:'');b.textContent=txt;
   w.appendChild(b);document.getElementById('msgs').appendChild(w);scrollB();
 }
 function addLoader(){const d=document.createElement('div');d.className='loader';d.innerHTML='<span></span><span></span><span></span>';document.getElementById('msgs').appendChild(d);scrollB();return d;}
 function removeLoader(el){if(el&&el.parentNode)el.remove();}
 function scrollB(){const m=document.getElementById('msgs');m.scrollTop=m.scrollHeight;}
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-// Auto-login si hay sesión guardada
 const saved=localStorage.getItem('mb_alumno');
 if(saved){try{const s=JSON.parse(saved);alumno=s.alumno;sesionId=s.sesionId;startChat();}catch(e){localStorage.removeItem('mb_alumno');}}
 </script>
