@@ -320,19 +320,7 @@ function startChat(){
   document.getElementById('chat-screen').style.display='block';
   document.getElementById('user-chip').textContent=alumno.nombre.split(' ')[0]+' · '+alumno.codigo;
   setTab(document.querySelector('.tab.on'),'general','General');
-  addBubble('b','¡Hola, '+alumno.nombre.split(' ')[0]+'! Soy MicroBot / HistoLab 🔬
-
-Puedo ayudarte a identificar:
-• Láminas histopatológicas → usa el tab 🔬 HistoLab
-• Láminas microbiológicas (Gram, Ziehl-Neelsen, KOH...)
-• Bacterias por morfología y tinción
-• Microorganismos ambientales
-
-📷 Puedes subir fotos o tomar foto directamente con la cámara.
-
-En HistoLab siempre te preguntaré la tinción y el tejido antes de identificar. ¡Así el diagnóstico es exacto!
-
-📝 ¿Tu profesor te dio un código de examen? Usa el botón naranja "Examen".','');
+  addBubble('b','¡Hola, '+alumno.nombre.split(' ')[0]+'! Soy MicroBot / HistoLab 🔬\n\nPuedo ayudarte a identificar:\n• Láminas histopatológicas → usa el tab 🔬 HistoLab\n• Láminas microbiológicas (Gram, Ziehl-Neelsen, KOH...)\n• Bacterias por morfología y tinción\n• Microorganismos ambientales\n\n📷 Puedes subir fotos o tomar foto directamente con la cámara.\n\nEn HistoLab siempre te preguntaré la tinción y el tejido antes de identificar. ¡Así el diagnóstico es exacto!\n\n📝 ¿Tu profesor te dio un código de examen? Usa el botón naranja "Examen".','');
   window.addEventListener('beforeunload',()=>{if(sesionId)navigator.sendBeacon('/api/cerrar-sesion',JSON.stringify({sesionId,totalMsgs}));});
   initStars();
 }
