@@ -307,7 +307,7 @@ const PLACEHOLDERS={
   ambiental:'Consulta sobre agua, suelo, coliformes...'
 };
 
-var alumno=null,sesionId=null,mode='general',history=[],imgData=null,imgType=null,busy=false,totalMsgs=0;
+var alumno=null,sesionId=null,mode='general',chatHistory=[],imgData=null,imgType=null,busy=false,totalMsgs=0;
 var examMode=false,examData=null,examPregunta=0,examCorrect=0,examPartial=0,examWrong=0,examHistory=[];
 var surveyRatings={1:0,2:0,3:0,4:0};
 
@@ -401,15 +401,15 @@ function send(){
   var content=[];
   if(imgData) content.push({type:'image',source:{type:'base64',media_type:imgType,data:imgData}});
   content.push({type:'text',text:fullTxt});
-  history.push({role:'user',content:content.length===1?fullTxt:content});
+  chatHistory.push({role:'user',content:content.length===1?fullTxt:content});
   totalMsgs++;removeImg();
   var lid=addLoader();
-  fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,alumno:alumno,sesionId:sesionId,modo:mode,mensajeUsuario:txt})})
+  fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistory,alumno:alumno,sesionId:sesionId,modo:mode,mensajeUsuario:txt})})
     .then(function(r){return r.json();})
     .then(function(d){
       removeLoader(lid);
       var reply=d.content||'Error.';
-      history.push({role:'assistant',content:reply});
+      chatHistory.push({role:'assistant',content:reply});
       renderBot(reply,false);
     })
     .catch(function(e){removeLoader(lid);addBubble('b','Error de conexion. Intenta nuevamente.','');});
