@@ -409,15 +409,7 @@ async function startExam(){
     updateExamProgress();
     document.getElementById('msgs').innerHTML='';
     document.getElementById('chips').style.display='none';
-    addBubble('b','📝 EXAMEN INICIADO: '+examData.nombre+'
-
-'+
-      (examData.descripcion?examData.descripcion+'
-
-':'')+
-      'Total de preguntas: '+examData.total_preguntas+'
-
-Describe o sube la imagen de la lámina que te indicó el profesor para comenzar. En este modo no habrá pistas ni materiales de apoyo.','ask');
+    addBubble('b','📝 EXAMEN INICIADO: '+examData.nombre+'\n\n'+(examData.descripcion?examData.descripcion+'\n\n':'')+' Total de preguntas: '+examData.total_preguntas+'\n\nDescribe o sube la imagen de la lámina que te indicó el profesor para comenzar. En este modo no habrá pistas ni materiales de apoyo.','ask');
   }catch(e){
     document.getElementById('exam-modal-err').textContent=e.message;
     document.getElementById('exam-modal-err').style.display='block';
